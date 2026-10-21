@@ -128,6 +128,10 @@ td.date-c .cell { font-family: var(--font-mono); font-size: 12px; }
 .cal-box .field { flex: 1 1 120px; }
 td.date-c.due, tbody tr:hover td.date-c.due { background: var(--warn-soft); }
 td.date-c.due .cell { color: var(--warn); font-weight: 600; }
+td.svc.soon, tbody tr:hover td.svc.soon { background: var(--warn-soft); }
+td.svc.soon .cell { color: var(--warn); font-weight: 600; }
+td.svc.late, tbody tr:hover td.svc.late { background: var(--danger-soft); }
+td.svc.late .cell { color: var(--danger); font-weight: 600; }
 td.bool { text-align: center; padding: 0 8px; }
 .lists { display: flex; gap: 3px; padding: 0 6px; flex-wrap: nowrap; }
 .lchip { --c: var(--accent); border: 1px solid var(--c); color: var(--c); background: transparent; border-radius: 999px; font-size: 10.5px; font-weight: 600; padding: 1px 7px; font-family: var(--font-mono); min-width: 28px; }
@@ -533,6 +537,22 @@ window.KONTAKT_CONFIG = {
   function fieldsFor(listId) { return S.fields.filter((f) => !f.lists || f.lists.includes(listId)); }
   function fieldsForContact(c) { return S.fields.filter((f) => !f.lists || f.lists.some((l) => (c.lists || []).includes(l))); }
   function isDue(c) { return !!c.nextDate && c.nextDate <= today(); }
+  // Service-Termine (nur Kundenliste): liegen in custom._service / custom._serviceNext, damit keine Datenbankänderung nötig ist.
+  function plusMonths(iso, n) {
+    if (!iso) return "";
+    const [y, m, d] = iso.split("-").map(Number);
+    const x = new Date(y, m - 1 + n, 1);
+    const last = new Date(x.getFullYear(), x.getMonth() + 1, 0).getDate();
+    x.setDate(Math.min(d, last));
+    return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
+  }
+  function serviceNext(c) { return (c.custom || {})._serviceNext || ""; }
+  function serviceState(c) {
+    const n = serviceNext(c); if (!n) return "";
+    if (n < today()) return "late";
+    return n <= plusMonths(today(), 1) ? "soon" : "";
+  }
+  const SERVICE_FIELD = { type: "datum" };
   function getVal(c, key) { return key.startsWith("c:") ? (c.custom || {})[key.slice(2)] : c[key]; }
   function setVal(c, key, v) { if (key.startsWith("c:")) c.custom = { ...(c.custom || {}), [key.slice(2)]: v }; else c[key] = v; }
   function inList(listId) { return [...S.contacts.values()].filter((c) => (c.lists || []).includes(listId)); }
@@ -746,6 +766,7 @@ window.KONTAKT_CONFIG = {
     const allSel = rows.every((c) => S.selected.has(c._id));
     const head = `<tr><th class="rn sticky1">#</th><th class="check sticky2"><input type="checkbox" id="selAll" ${allSel ? "checked" : ""} aria-label="Alle auswählen"></th>
       <th class="sticky3">Name</th><th>Listen</th><th>Soziotop</th><th>Beruf</th><th>Informationen</th><th>Next Step</th><th>Fällig am</th><th>PP</th>
+      ${S.list === "kunden" ? `<th class="custom">Service-Termin</th><th class="custom" title="Wird automatisch ein halbes Jahr nach dem Service-Termin eingetragen">Nächster Service</th>` : ""}
       ${custom.map((f) => `<th class="custom" title="Eigenes Feld">${esc(f.label)}</th>`).join("")}
       <th></th></tr>`;
     const dis = S.canEdit ? "" : "disabled";
@@ -762,6 +783,7 @@ window.KONTAKT_CONFIG = {
         <td class="w-ns">${cellInput(c, id, "nextStep")}</td>
         <td class="date-c ${isDue(c) ? "due" : ""}"><div class="date-wrap"><input class="cell" type="date" data-id="${id}" data-f="nextDate" value="${esc(c.nextDate || "")}" aria-label="Fällig am" ${dis}><button type="button" class="cal-btn" data-cal="${id}" title="In den Kalender eintragen" ${c.nextDate ? "" : "hidden"}>Kalender</button></div></td>
         <td class="w-pp">${cellInput(c, id, "pp")}</td>
+        ${S.list === "kunden" ? `<td class="w-c date-c">${cellInput(c, id, "c:_service", SERVICE_FIELD)}</td><td class="w-c date-c svc ${serviceState(c)}">${cellInput(c, id, "c:_serviceNext", SERVICE_FIELD)}</td>` : ""}
         ${custom.map((f) => `<td class="w-c ${f.type === "janein" ? "bool" : ""} ${f.type === "datum" ? "date-c" : ""}">${cellInput(c, id, "c:" + f.id, f)}</td>`).join("")}
         <td class="act"><button type="button" class="open-btn" data-open="${id}" title="Alle Angaben ansehen">Öffnen</button></td>
       </tr>`;
@@ -865,6 +887,9 @@ window.KONTAKT_CONFIG = {
           <p class="hint" style="flex-basis:100%">Öffnet den Termin im Kalender deines iPhones oder Computers, du bestätigst ihn dort mit „Hinzufügen“. Eine Erinnerung ist schon eingestellt.</p>
         </div>
         ${dField(c, id, "pp", "PP")}
+        ${c.lists.includes("kunden") ? `<h3 class="section-title">Service</h3>
+        <div class="grid2">${dField(c, id, "c:_service", "Service-Termin", SERVICE_FIELD)}${dField(c, id, "c:_serviceNext", "Nächster Service (automatisch +6 Monate)", SERVICE_FIELD)}</div>
+        <div class="cal-bar"><button class="btn" type="button" data-svcal="${id}" ${serviceNext(c) ? "" : "disabled"}>Nächsten Service in Kalender</button><span class="hint">Trag nach jedem Service das neue Datum ein, der nächste Termin rückt dann automatisch nach.</span></div>` : ""}
         ${custom.length ? `<h3 class="section-title">Eigene Felder</h3>` + custom.map((f) => dField(c, id, "c:" + f.id, f.label, f)).join("") : ""}
         <h3 class="section-title">Listen</h3>
         ${S.canEdit ? `<p class="hint">Antippen, um den Kontakt in eine Liste aufzunehmen oder herauszunehmen. Ein Kontakt kann in mehreren Listen stehen.</p>` : ""}
@@ -924,6 +949,8 @@ window.KONTAKT_CONFIG = {
     nextStep: ["next step", "nextstep", "next steps", "nächster schritt", "naechster schritt"],
     nextDate: ["fällig", "fällig am", "datum", "termin", "next step datum"],
     pp: ["pp"],
+    _service: ["service-termin", "service termin", "servicetermin", "letzter service"],
+    _serviceNext: ["nächster service", "naechster service"],
   };
   function splitRows(text) {
     text = text.replace(/^﻿/, "");
@@ -964,13 +991,15 @@ window.KONTAKT_CONFIG = {
       const o = { custom: {}, newVals: {}, lists: [] }; let first = "", last = "";
       cols.forEach((c, i) => {
         const v = (r[i] || "").trim(); if (!v) return;
-        if (c.kind === "base") o[c.key] = c.key === "nextDate" ? toIsoDate(v) : v;
+        if (c.kind === "base" && c.key.startsWith("_")) o.custom[c.key] = toIsoDate(v);
+        else if (c.kind === "base") o[c.key] = c.key === "nextDate" ? toIsoDate(v) : v;
         else if (c.kind === "first") first = v;
         else if (c.kind === "last") last = v;
         else if (c.kind === "lists") o.lists = v.split(",").map((s) => LISTS.find((l) => norm(l.label) === norm(s) || norm(l.short) === norm(s))).filter(Boolean).map((l) => l.id);
         else if (c.kind === "custom") o.custom[c.id] = v;
         else if (c.kind === "new") o.newVals[c.h] = v;
       });
+      if (o.custom._service && !o.custom._serviceNext) o.custom._serviceNext = plusMonths(o.custom._service, 6);
       if (!o.name && (first || last)) o.name = [first, last].filter(Boolean).join(" ");
       if (!o.name) { out.noName++; continue; }
       out.rows.push(o);
@@ -1052,9 +1081,10 @@ window.KONTAKT_CONFIG = {
   // ---------- Export ----------
   function exportCsv() {
     const rows = visibleRows(), custom = fieldsFor(S.list);
-    const head = ["Name", "Soziotop", "Beruf", "Informationen", "Next Step", "Fällig am", "PP", ...custom.map((f) => f.label), "Listen"];
+    const svcCols = S.list === "kunden";
+    const head = ["Name", "Soziotop", "Beruf", "Informationen", "Next Step", "Fällig am", "PP", ...(svcCols ? ["Service-Termin", "Nächster Service"] : []), ...custom.map((f) => f.label), "Listen"];
     const q = (v) => { const s = v === true ? "ja" : v === false || v == null ? "" : String(v); return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-    const lines = [head.map(q).join(";")].concat(rows.map((c) => [c.name, c.soziotop, c.beruf, c.info, c.nextStep, c.nextDate, c.pp, ...custom.map((f) => (c.custom || {})[f.id]), c.lists.map((l) => listById(l).label).join(", ")].map(q).join(";")));
+    const lines = [head.map(q).join(";")].concat(rows.map((c) => [c.name, c.soziotop, c.beruf, c.info, c.nextStep, c.nextDate, c.pp, ...(svcCols ? [(c.custom || {})._service, (c.custom || {})._serviceNext] : []), ...custom.map((f) => (c.custom || {})[f.id]), c.lists.map((l) => listById(l).label).join(", ")].map(q).join(";")));
     const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -1245,15 +1275,20 @@ window.KONTAKT_CONFIG = {
     const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
     const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Kontakt-Dashboard//DE", "CALSCALE:GREGORIAN"];
     for (const ev of events) {
-      lines.push("BEGIN:VEVENT", `UID:${ev.uid}@kontakt-dashboard`, `DTSTAMP:${stamp}`, `DTSTART:${f(ev.s)}`, `DTEND:${f(ev.e)}`, `SUMMARY:${icsText(ev.title)}`);
+      const dOnly = (x) => `${x.getFullYear()}${pad(x.getMonth() + 1)}${pad(x.getDate())}`;
+      lines.push("BEGIN:VEVENT", `UID:${ev.uid}@kontakt-dashboard`, `DTSTAMP:${stamp}`, ...(ev.allDay ? [`DTSTART;VALUE=DATE:${dOnly(ev.s)}`, `DTEND;VALUE=DATE:${dOnly(addDays(ev.s, 1))}`] : [`DTSTART:${f(ev.s)}`, `DTEND:${f(ev.e)}`]), `SUMMARY:${icsText(ev.title)}`);
       if (ev.desc) lines.push(`DESCRIPTION:${icsText(ev.desc)}`);
-      lines.push("BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:Erinnerung", "TRIGGER:-PT15M", "END:VALARM", "END:VEVENT");
+      lines.push("BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:Erinnerung", ev.allDay ? "TRIGGER:-P7D" : "TRIGGER:-PT15M", "END:VALARM", "END:VEVENT");
     }
     lines.push("END:VCALENDAR");
     const a = document.createElement("a");
     a.href = "data:text/calendar;charset=utf-8," + encodeURIComponent(lines.map(icsFold).join("\r\n") + "\r\n");
     a.download = filename;
     document.body.appendChild(a); a.click(); a.remove();
+  }
+  function serviceToCalendar(id) {
+    const c = S.contacts.get(id); const n = c && serviceNext(c); if (!n) return;
+    calIcsDownload([{ uid: "service-" + id + "-" + n, s: new Date(n + "T12:00:00"), allDay: true, title: `Service-Termin – ${c.name || "Kunde"}`, desc: [c.beruf, c.info].filter(Boolean).join("\n") }], `Service-${(c.name || "Kunde").replace(/[^\wäöüÄÖÜß-]+/g, "-")}-${n}.ics`);
   }
   function bookingEvent(b) {
     const mineAsOwner = b.owner === S.me.id;
@@ -1334,7 +1369,7 @@ window.KONTAKT_CONFIG = {
     const open = C.todos.filter((t) => !t.done).sort((a, b) => a.priority - b.priority || (a.due || "9999").localeCompare(b.due || "9999"));
     const done = C.todos.filter((t) => t.done);
     const linked = new Set(C.todos.map((t) => t.contact_id).filter(Boolean));
-    const sugg = C.nextSteps.filter((n) => !linked.has(n.id)).sort((a, b) => a.next_date.localeCompare(b.next_date));
+    const sugg = C.nextSteps.filter((n) => n.next_date && !linked.has(n.id)).sort((a, b) => a.next_date.localeCompare(b.next_date));
     const row = (t) => {
       const ps = t.planned_start ? new Date(t.planned_start) : null;
       const late = t.due && !t.done && t.due < isoDate(new Date());
@@ -1358,6 +1393,14 @@ window.KONTAKT_CONFIG = {
       <div class="tlist">${open.map(row).join("") || `<p class="hint">Keine offenen To-Dos.</p>`}</div>
       ${sugg.length ? `<h3 class="section-title">Vorschläge aus deinen Kontakten</h3><p class="hint">Next Steps, die in den nächsten 14 Tagen fällig sind oder überfällig.</p>
         <div class="tlist">${sugg.map((n) => `<div class="trow"><span class="ttitle-s"><strong>${esc(n.next_step || "Next Step")}</strong> – ${esc(n.name)}</span><span class="pill ${n.next_date < isoDate(new Date()) ? "warn" : ""}">fällig ${fmtDate(n.next_date)}</span><button type="button" class="btn" data-nsadd="${n.id}">Als To-Do übernehmen</button></div>`).join("")}</div>` : ""}
+      ${(() => {
+        if (S.owner !== S.me.id) return "";
+        const limit = plusMonths(isoDate(new Date()), 1);
+        const openTitles = new Set(C.todos.filter((t) => !t.done).map((t) => t.title));
+        const svc = [...S.contacts.values()].filter((c) => c.lists.includes("kunden") && serviceNext(c) && serviceNext(c) <= limit && !openTitles.has(`Service-Termin vereinbaren – ${c.name}`))
+          .sort((a, b) => serviceNext(a).localeCompare(serviceNext(b)));
+        return svc.length ? `<h3 class="section-title">Service-Termine in den nächsten 4 Wochen</h3><div class="tlist">${svc.map((c) => `<div class="trow"><span class="ttitle-s"><strong>Service-Termin</strong> – ${esc(c.name)}</span><span class="pill ${serviceNext(c) < isoDate(new Date()) ? "warn" : ""}">fällig ${fmtDate(serviceNext(c))}</span><button type="button" class="btn" data-svadd="${c._id}">Als To-Do übernehmen</button></div>`).join("")}</div>` : "";
+      })()}
       ${done.length ? `<div class="cal-bar"><button class="linkbtn" type="button" data-cact="toggledone">${C.showDone ? "Erledigte ausblenden" : `Erledigte anzeigen (${done.length})`}</button><span class="spacer"></span>${C.showDone ? `<button class="btn ghost" type="button" data-cact="cleardone">Erledigte löschen</button>` : ""}</div>${C.showDone ? `<div class="tlist">${done.map(row).join("")}</div>` : ""}` : ""}`;
   }
   function calBook() {
@@ -1457,6 +1500,13 @@ window.KONTAKT_CONFIG = {
     }
     if (d.tunplan) { const x = C.todos.find((y) => y.id === d.tunplan); if (!x) return; x.planned_start = null; renderAll(); await S.sb.from("todos").update({ planned_start: null }).eq("id", x.id); return; }
     if (d.tdel) { const x = C.todos.find((y) => y.id === d.tdel); C.todos = C.todos.filter((y) => y.id !== d.tdel); renderAll(); await S.sb.from("todos").delete().eq("id", d.tdel); return toast(`„${x ? x.title : "To-Do"}“ gelöscht.`); }
+    if (d.svadd) {
+      const c = S.contacts.get(d.svadd); if (!c) return;
+      const due = serviceNext(c) < isoDate(new Date()) ? isoDate(new Date()) : plusMonths(serviceNext(c), 0);
+      const { data, error } = await S.sb.from("todos").insert({ owner: S.me.id, title: `Service-Termin vereinbaren – ${c.name}`, due, contact_id: d.svadd, priority: 2, duration_min: 15 }).select().single();
+      if (error) return toast(error.message);
+      C.todos.push(data); renderAll(); return toast("Als To-Do übernommen.");
+    }
     if (d.nsadd) {
       const n = C.nextSteps.find((x) => x.id === d.nsadd); if (!n) return;
       const { data, error } = await S.sb.from("todos").insert({ owner: S.me.id, title: `${n.next_step || "Next Step"} – ${n.name}`, due: n.next_date, contact_id: n.id, priority: n.next_date <= isoDate(new Date()) ? 1 : 2 }).select().single();
@@ -1590,6 +1640,15 @@ window.KONTAKT_CONFIG = {
           ${!C.loaded ? `<p class="hint">Wird geladen …</p>` : nextBookings.length ? nextBookings.map((b) => `<div class="hrow static booking"><span class="hdate">${dayLabel(new Date(b.start_at))}</span><span class="hmain"><strong>${esc(b.title)}</strong><span>${hm(new Date(b.start_at))} Uhr · ${b.owner === S.me.id ? "mit " + esc(b.booker_name) : "bei " + esc(b.owner_name)}</span></span></div>`).join("") : `<p class="hint">Keine weiteren Termine.</p>`}
           ${people.length ? `<div class="hwho">${people.map((p) => { const d = C.previews[p.id]; const n = d && d.slots[0]; return `<button type="button" class="hwho-i" data-hbook="${p.id}"><strong>${esc(p.name)} hat Zeit</strong><span>${!d ? "…" : n ? `${dayLabel(n.s)}, ${hm(n.s)} Uhr` : "gerade nichts frei"}</span></button>`; }).join("")}</div>` : ""}
         </section>
+        ${(() => {
+          const limit = plusMonths(today, 1);
+          const svc = contacts.filter((c) => c.lists.includes("kunden") && serviceNext(c) && serviceNext(c) <= limit).sort((a, b) => serviceNext(a).localeCompare(serviceNext(b))).slice(0, 6);
+          const cnt = contacts.filter((c) => c.lists.includes("kunden") && serviceNext(c)).length;
+          if (!cnt) return "";
+          return `<section class="hcard"><div class="hcard-h"><h3>Service-Termine</h3><button class="linkbtn" type="button" data-hlist="kunden">Kundenliste</button></div>
+            ${svc.length ? svc.map((c) => `<button type="button" class="hrow" data-hopen="${c._id}"><span class="hdate ${serviceNext(c) < today ? "late" : "now"}">${serviceNext(c) < today ? "überfällig" : fmtDate(serviceNext(c))}</span><span class="hmain"><strong>${esc(c.name || "Ohne Namen")}</strong><span>Letzter Service ${(c.custom || {})._service ? fmtDate((c.custom || {})._service) : "–"}</span></span></button>`).join("") : `<p class="hint">In den nächsten 4 Wochen steht kein Service an.</p>`}
+          </section>`;
+        })()}
         <section class="hcard"><div class="hcard-h"><h3>Zuletzt bearbeitet</h3><button class="linkbtn" type="button" data-view="list">Zur Liste</button></div>
           ${recent.length ? recent.map((c) => `<button type="button" class="hrow" data-hopen="${c._id}"><span class="hmain"><strong>${esc(c.name || "Ohne Namen")}</strong><span>${esc([c.beruf, c.soziotop].filter(Boolean).join(" · ") || "Keine Angaben")}</span></span><span class="hlists">${c.lists.map((l) => `<i style="--c: var(--l-${l})" title="${esc(listById(l).label)}">${listById(l).short}</i>`).join("")}</span></button>`).join("") : `<p class="hint">Noch keine Kontakte. <button class="linkbtn" type="button" data-hact="contact">Ersten Kontakt anlegen</button></p>`}
         </section>
@@ -1671,6 +1730,17 @@ window.KONTAKT_CONFIG = {
     const c = S.contacts.get(id); if (!c) return;
     const v = el.type === "checkbox" ? el.checked : el.value;
     setVal(c, key, v);
+    if (key === "c:_service") {
+      const nx = v ? plusMonths(v, 6) : "";
+      setVal(c, "c:_serviceNext", nx);
+      document.querySelectorAll(`[data-f="c:_serviceNext"][data-id="${id}"], [data-f="c:_serviceNext"][data-did="${id}"]`).forEach((x) => { x.value = nx; });
+      if (nx && el.type === "date" && v.length === 10) toast(`Nächster Service für ${c.name || "den Kunden"} automatisch am ${new Date(nx + "T12:00:00").toLocaleDateString("de-DE")} eingeplant.`);
+    }
+    if (key === "c:_service" || key === "c:_serviceNext") {
+      const td = document.querySelector(`#tableBox td.svc [data-id="${id}"]`)?.closest("td");
+      if (td) { td.classList.remove("late", "soon"); const st = serviceState(c); if (st) td.classList.add(st); }
+      const b = document.querySelector(`[data-svcal="${id}"]`); if (b) b.disabled = !serviceNext(c);
+    }
     if (el.type === "text") el.title = v;
     saveContact(id, el.type === "text" || el.tagName === "TEXTAREA" ? 700 : 0);
     if (key === "nextDate") { const td = el.closest("td.date-c"); if (td) { td.classList.toggle("due", isDue(c)); const cb = td.querySelector(".cal-btn"); if (cb) cb.hidden = !c.nextDate; } renderTabs(); renderToolbar(); }
@@ -1798,9 +1868,10 @@ window.KONTAKT_CONFIG = {
   });
   let armed = null;
   ov.addEventListener("click", (e) => {
-    const t = e.target.closest("[data-act], [data-toggle], [data-del], [data-fdel], [data-cal], #impGo");
+    const t = e.target.closest("[data-act], [data-toggle], [data-del], [data-fdel], [data-cal], [data-svcal], #impGo");
     if (!t) return;
     if (t.dataset.cal) return addToCalendar(t.dataset.cal);
+    if (t.dataset.svcal) return serviceToCalendar(t.dataset.svcal);
     if (t.dataset.act === "close") return closePanel();
     if (t.id === "impGo") return runImport();
     if (t.dataset.toggle) {
