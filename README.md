@@ -1,4 +1,4 @@
-# kontakt-dashboard
+# Vertriebs-Cockpit
 
 Persönliches Kontakt-Dashboard mit Login, Team-Freigaben, Kalender, To-Dos und Buchungen.
 
