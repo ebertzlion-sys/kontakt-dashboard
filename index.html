@@ -1,0 +1,1721 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kontakt-Dashboard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: login card, then sticky header with view switcher and list tabs, spreadsheet table, side drawer for details, fields and import */
+:root {
+  --bg: #f2f5f6;
+  --surface: #ffffff;
+  --surface-2: #e9eef0;
+  --fg: #13222a;
+  --muted: #5a6a72;
+  --line: #d3dcdf;
+  --accent: #0d5c6b;
+  --accent-fg: #ffffff;
+  --accent-soft: #dbecef;
+  --warn: #9a4f08;
+  --warn-soft: #fbe9d4;
+  --danger: #b3261e;
+  --danger-soft: #fbe2df;
+  --l-haupt: #0d5c6b;
+  --l-pp: #7a3fa0;
+  --l-l30: #a9600b;
+  --l-kunden: #2d7a31;
+  --shadow: 0 12px 40px rgba(10, 30, 40, .18);
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --radius: 8px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e161a; --surface: #142026; --surface-2: #1b2a31; --fg: #e2ebee; --muted: #93a6ad; --line: #2a3b43;
+    --accent: #5cbfcf; --accent-fg: #062429; --accent-soft: #173940;
+    --warn: #f0a35a; --warn-soft: #3a2916; --danger: #ff8a80; --danger-soft: #3c1c1a;
+    --l-haupt: #5cbfcf; --l-pp: #c69ae6; --l-l30: #f0a35a; --l-kunden: #80cf84;
+    --shadow: 0 12px 40px rgba(0, 0, 0, .5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e161a; --surface: #142026; --surface-2: #1b2a31; --fg: #e2ebee; --muted: #93a6ad; --line: #2a3b43;
+  --accent: #5cbfcf; --accent-fg: #062429; --accent-soft: #173940;
+  --warn: #f0a35a; --warn-soft: #3a2916; --danger: #ff8a80; --danger-soft: #3c1c1a;
+  --l-haupt: #5cbfcf; --l-pp: #c69ae6; --l-l30: #f0a35a; --l-kunden: #80cf84;
+  --shadow: 0 12px 40px rgba(0, 0, 0, .5);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { color-scheme: light; }
+body { margin: 0; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 14px; line-height: 1.45; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+.wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Header */
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+.top-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-block: 14px 10px; }
+.brand { display: flex; flex-direction: column; min-width: 0; margin-right: auto; }
+.brand h1 { font-family: var(--font-display); font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+.brand small { color: var(--muted); font-size: 12px; }
+.tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding-block: 0; }
+.tab { --c: var(--accent); display: flex; align-items: center; gap: 8px; border: 0; background: none; padding: 10px 12px 11px; border-bottom: 3px solid transparent; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.tab:hover { color: var(--fg); }
+.tab[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--c); }
+.tab .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+.tab .n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); background: var(--surface-2); border-radius: 999px; padding: 0 7px; font-variant-numeric: tabular-nums; }
+
+.btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); padding: 7px 12px; border-radius: var(--radius); font-weight: 500; white-space: nowrap; }
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.danger { color: var(--danger); border-color: var(--danger); background: var(--surface); }
+.btn.danger.armed { background: var(--danger); color: var(--surface); }
+.btn.ghost { border-color: transparent; background: none; }
+.btn:disabled { opacity: .5; cursor: default; }
+
+/* Toolbar */
+main { padding-block: 16px 48px; display: flex; flex-direction: column; gap: 12px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.toolbar input[type="search"], .toolbar select { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); padding: 7px 10px; min-width: 0; }
+.toolbar input[type="search"] { flex: 1 1 220px; }
+.chip-toggle { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 12px; font-weight: 500; }
+.chip-toggle[aria-pressed="true"] { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); }
+.spacer { flex: 1; }
+
+.bulk[hidden], .btn[hidden] { display: none; }
+.bulk { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--accent-soft); border-radius: var(--radius); padding: 8px 12px; }
+.bulk select { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); padding: 6px 8px; }
+.bulk strong { margin-right: 4px; }
+
+/* Table: spreadsheet grid, one row per person, frozen header and name column */
+.table-box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: auto; max-height: calc(100dvh - 250px); }
+table { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; }
+th, td { text-align: left; vertical-align: middle; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 0; white-space: nowrap; background: var(--surface); }
+th { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; padding: 7px 8px; background: var(--surface-2); position: sticky; top: 0; z-index: 2; }
+th.custom { color: var(--accent); }
+.sticky1 { position: sticky; left: 0; z-index: 1; }
+.sticky2 { position: sticky; left: 40px; z-index: 1; }
+.sticky3 { position: sticky; left: 72px; z-index: 1; box-shadow: 1px 0 0 var(--line), 4px 0 6px -4px rgba(0,0,0,.18); }
+th.sticky1, th.sticky2, th.sticky3 { z-index: 3; }
+td.rn, th.rn { width: 40px; min-width: 40px; text-align: center; font-family: var(--font-mono); font-size: 11px; color: var(--muted); background: var(--surface-2); font-variant-numeric: tabular-nums; padding: 0 4px; }
+tbody tr:hover td { background: color-mix(in srgb, var(--accent-soft) 45%, var(--surface)); }
+tbody tr:hover td.rn { background: var(--accent-soft); }
+tbody tr.sel td { background: var(--accent-soft); }
+td .cell { display: block; width: 100%; height: 32px; border: 0; background: transparent; padding: 0 8px; min-width: 0; text-overflow: ellipsis; }
+td .cell:focus { outline: 2px solid var(--accent); outline-offset: -2px; background: var(--surface); position: relative; z-index: 1; }
+td input.name { font-weight: 600; }
+td select.cell { appearance: auto; }
+td.check, th.check { width: 32px; min-width: 32px; text-align: center; padding: 0 6px; }
+td.check input, th.check input { width: 15px; height: 15px; vertical-align: middle; }
+td.date-c .cell { font-family: var(--font-mono); font-size: 12px; }
+.date-wrap { display: flex; align-items: center; }
+.date-wrap .cell { flex: 1; }
+.cal-btn { border: 1px solid var(--line); background: var(--surface); color: var(--accent); border-radius: 6px; font-size: 11px; font-weight: 600; padding: 3px 6px; margin-right: 4px; white-space: nowrap; }
+.cal-btn:hover { background: var(--accent-soft); }
+.cal-box { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; background: var(--surface-2); border-radius: var(--radius); padding: 10px 12px; }
+.cal-box .field { flex: 1 1 120px; }
+td.date-c.due, tbody tr:hover td.date-c.due { background: var(--warn-soft); }
+td.date-c.due .cell { color: var(--warn); font-weight: 600; }
+td.bool { text-align: center; padding: 0 8px; }
+.lists { display: flex; gap: 3px; padding: 0 6px; flex-wrap: nowrap; }
+.lchip { --c: var(--accent); border: 1px solid var(--c); color: var(--c); background: transparent; border-radius: 999px; font-size: 10.5px; font-weight: 600; padding: 1px 7px; font-family: var(--font-mono); min-width: 28px; }
+.lchip[aria-pressed="true"] { background: var(--c); color: var(--surface); }
+.lchip.wide { font-family: var(--font-body); font-size: 13px; padding: 6px 12px; }
+td.act { padding: 0 6px; }
+.open-btn { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 3px 8px; font-size: 12px; }
+.open-btn:hover { background: var(--surface-2); }
+.w-name .cell { width: 180px; } .w-soz .cell { width: 130px; } .w-beruf .cell { width: 140px; } .w-info .cell { width: 300px; } .w-ns .cell { width: 200px; } .date-c .cell { width: 128px; } .w-pp .cell { width: 110px; } .w-c .cell { width: 140px; }
+
+.empty { padding: 48px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.empty h2 { font-family: var(--font-display); font-size: 20px; margin: 0; }
+.empty p { color: var(--muted); max-width: 46ch; margin: 0; }
+.empty .row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.foot { color: var(--muted); font-size: 12px; max-width: 80ch; }
+.foot strong { color: var(--fg); font-weight: 600; }
+.status { font-size: 12px; color: var(--muted); }
+
+@media (max-width: 760px) {
+  .table-box { max-height: calc(100dvh - 300px); }
+  .w-name .cell { width: 140px; }
+  .sticky3 { box-shadow: 1px 0 0 var(--line), 4px 0 6px -4px rgba(0,0,0,.25); }
+}
+/* Drawer */
+.scrim { position: fixed; inset: 0; background: rgba(5, 15, 20, .45); z-index: 20; }
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(480px, 100%); background: var(--surface); z-index: 21; box-shadow: var(--shadow); display: flex; flex-direction: column; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); padding-right: env(safe-area-inset-right, 0px); }
+.drawer-head { display: flex; align-items: center; gap: 8px; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+.drawer-head h2 { font-family: var(--font-display); font-size: 19px; margin: 0; margin-right: auto; min-width: 0; overflow-wrap: anywhere; }
+.drawer-body { overflow-y: auto; padding: 16px 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+.drawer-foot { border-top: 1px solid var(--line); padding: 12px 20px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field > span { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+.field input, .field select, .field textarea { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 8px 10px; width: 100%; }
+.field textarea { min-height: 110px; resize: vertical; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 480px) { .grid2 { grid-template-columns: 1fr; } }
+.section-title { font-family: var(--font-display); font-size: 15px; margin: 6px 0 0; }
+.hint { color: var(--muted); font-size: 12.5px; margin: 0; }
+.meta { color: var(--muted); font-size: 12px; font-family: var(--font-mono); }
+.frow { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); }
+.frow .scopes { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.frow .type { font-size: 12px; color: var(--muted); }
+.frow input[type="text"] { border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; background: var(--surface); width: 100%; }
+.scopes label { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; }
+textarea.paste { font-family: var(--font-mono); font-size: 12px; min-height: 180px; }
+.preview { background: var(--surface-2); border-radius: var(--radius); padding: 10px 12px; font-size: 13px; }
+
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg); padding: 10px 14px; border-radius: var(--radius); z-index: 30; display: flex; gap: 12px; align-items: center; box-shadow: var(--shadow); max-width: calc(100% - 32px); }
+.toast button { background: none; border: 0; color: var(--bg); font-weight: 600; text-decoration: underline; }
+@media (prefers-reduced-motion: no-preference) {
+  .drawer { animation: slide .18s ease-out; }
+  @keyframes slide { from { transform: translateX(24px); opacity: .6; } to { transform: none; opacity: 1; } }
+}
+
+/* App shell: login card, view switcher, team cards, admin tables */
+.auth { min-height: 100dvh; display: grid; place-items: center; padding-block: 32px; }
+.auth-card { width: min(400px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 28px 24px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow); }
+.auth-card h1 { font-family: var(--font-display); font-size: 24px; margin: 0; }
+.auth-card form { display: flex; flex-direction: column; gap: 12px; }
+.auth-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+.auth-tabs button { border: 0; background: none; padding: 8px 10px; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; }
+.auth-tabs button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+.msg { font-size: 13px; border-radius: 6px; padding: 8px 10px; background: var(--accent-soft); }
+.msg.err { background: var(--danger-soft); color: var(--danger); }
+.linkbtn { border: 0; background: none; color: var(--accent); padding: 0; font-weight: 500; text-decoration: underline; text-align: left; }
+.views { display: flex; gap: 4px; background: var(--surface-2); padding: 3px; border-radius: 999px; }
+.views { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.views button { white-space: nowrap; border: 0; background: none; padding: 6px 14px; border-radius: 999px; font-weight: 600; color: var(--muted); }
+.views button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.who { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.banner { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background: var(--accent-soft); border-radius: var(--radius); padding: 8px 12px; }
+.banner strong { font-weight: 600; }
+.pill { font-size: 11px; font-weight: 600; border-radius: 999px; padding: 2px 8px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
+.pill.edit { background: var(--accent); color: var(--accent-fg); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.team-card { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+.team-card:hover { border-color: var(--accent); }
+.team-card h3 { font-family: var(--font-display); font-size: 17px; margin: 0; }
+.team-card span { color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
+.page-title { font-family: var(--font-display); font-size: 20px; margin: 4px 0 0; }
+.admin-box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow-x: auto; }
+.admin-box table { width: 100%; min-width: 640px; border-collapse: collapse; }
+.admin-box td, .admin-box th { padding: 8px 10px; border-bottom: 1px solid var(--line); border-right: 0; white-space: normal; background: transparent; position: static; }
+.admin-box select, .admin-box input[type="text"] { border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; background: var(--surface); }
+.share-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.share-chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 999px; padding: 3px 4px 3px 10px; font-size: 12.5px; background: var(--surface); }
+.share-chip button { border: 0; background: var(--surface-2); border-radius: 999px; width: 22px; height: 22px; line-height: 1; }
+td input:disabled, td select:disabled { color: var(--fg); opacity: 1; }
+.lchip:disabled { cursor: default; }
+
+/* Kalender */
+.cal-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+.cal-tabs button { border: 0; background: none; padding: 9px 12px; font-weight: 600; color: var(--muted); border-bottom: 3px solid transparent; white-space: nowrap; }
+.cal-tabs button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+.cal-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.weeknav { display: flex; align-items: center; gap: 8px; }
+.weeknav strong { font-variant-numeric: tabular-nums; }
+.cal-sum { display: flex; flex-wrap: wrap; gap: 8px 20px; color: var(--muted); font-size: 13px; }
+.cal-sum strong { color: var(--fg); font-family: var(--font-mono); }
+.tips { background: var(--accent-soft); border-radius: var(--radius); padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; }
+.tips p { margin: 0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.cweek { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.cday { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.cday.today { border-color: var(--accent); box-shadow: inset 0 3px 0 var(--accent); }
+.cday.past { opacity: .6; }
+.cday h3 { margin: 0; font-family: var(--font-display); font-size: 15px; display: flex; gap: 6px; align-items: center; }
+.cday h3 span { color: var(--muted); font-family: var(--font-mono); font-size: 12px; font-weight: 500; }
+.cday .hint { margin: 0; }
+.ci { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; padding: 6px 8px; border-radius: 6px; align-items: start; }
+.ci .ct { font-family: var(--font-mono); font-size: 12px; color: var(--muted); padding-top: 2px; white-space: nowrap; }
+.ci .cx { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+.ci .cx span { font-size: 12.5px; color: var(--muted); }
+.ci .ca { grid-column: 2; display: flex; gap: 6px; flex-wrap: wrap; }
+.ci.booking { background: var(--accent-soft); }
+.ci.todo { background: var(--surface-2); }
+.ci.todo.done strong { text-decoration: line-through; color: var(--muted); }
+.row-c { display: flex; gap: 6px; align-items: center; color: var(--fg) !important; font-size: 14px !important; }
+.cfoot { margin: 0; font-size: 12px; color: var(--muted); }
+.cfoot.free { color: var(--l-kunden); }
+.open-btn.armed { background: var(--danger); color: var(--surface); border-color: var(--danger); }
+.todo-add { display: flex; flex-wrap: wrap; gap: 8px; }
+.todo-add input, .todo-add select { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); padding: 7px 10px; min-width: 0; }
+.todo-add #tdTitle { flex: 1 1 260px; }
+.tlist { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.trow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.trow:last-child { border-bottom: 0; }
+.trow .ttitle { flex: 1 1 200px; border: 1px solid transparent; background: transparent; padding: 5px 6px; border-radius: 4px; min-width: 0; font-weight: 500; }
+.trow .ttitle:hover { border-color: var(--line); }
+.trow .ttitle:focus { border-color: var(--accent); outline: none; background: var(--surface); }
+.trow .ttitle-s { flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; }
+.trow.done .ttitle { text-decoration: line-through; color: var(--muted); }
+.trow input[type="checkbox"] { width: 17px; height: 17px; }
+.team-card.sel { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.book-detail { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.bday { display: flex; flex-direction: column; gap: 6px; }
+.slots { display: flex; flex-wrap: wrap; gap: 6px; }
+.slot { border: 1px solid var(--accent); color: var(--accent); background: var(--surface); border-radius: 6px; padding: 6px 10px; font-family: var(--font-mono); font-size: 13px; }
+.slot:hover { background: var(--accent-soft); }
+.slot.on { background: var(--accent); color: var(--accent-fg); }
+.book-form { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
+.book-form p { margin: 0; }
+.set-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+@media (max-width: 400px) { .set-grid { grid-template-columns: 1fr; } }
+.set-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.set-card .section-title { margin: 0; }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip-toggle[aria-pressed="true"].preset-on, .presets .chip-toggle[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.wins { display: flex; flex-direction: column; gap: 6px; }
+.win { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto minmax(0, 1fr) auto; gap: 6px; align-items: center; }
+.win select, .win input { width: 100%; min-width: 0; }
+.win .x { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; width: 30px; height: 30px; }
+.win select, .win input, .set-card input[type="date"] { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 5px 8px; }
+.share-list { display: flex; flex-direction: column; gap: 6px; }
+.share-item { display: flex; gap: 8px; align-items: center; }
+</style>
+</head>
+<body>
+<div id="authView" class="auth wrap" hidden></div>
+
+<div id="appView" hidden>
+<header class="top">
+  <div class="wrap">
+    <div class="top-row">
+      <div class="brand">
+        <h1>Kontakt-Dashboard</h1>
+        <small id="summary"></small>
+      </div>
+      <div class="views" id="views" role="group" aria-label="Bereich"></div>
+      <div class="who"><span id="whoName"></span><button class="btn ghost" id="btnLogout" type="button">Abmelden</button></div>
+    </div>
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Listen"></nav>
+  </div>
+</header>
+
+<main class="wrap" id="listView">
+  <div class="banner" id="ownerBanner" hidden></div>
+  <div class="toolbar">
+    <input type="search" id="q" placeholder="Suchen: Name, Beruf, Notizen …" aria-label="Kontakte durchsuchen">
+    <select id="soz" aria-label="Nach Soziotop filtern"><option value="">Alle Soziotope</option></select>
+    <select id="sort" aria-label="Sortierung">
+      <option value="name">Sortiert nach Name</option>
+      <option value="next">Nach Next-Step-Datum</option>
+      <option value="updated">Zuletzt bearbeitet</option>
+      <option value="created">Zuletzt angelegt</option>
+    </select>
+    <button class="chip-toggle" id="dueOnly" type="button" aria-pressed="false">Fällig: 0</button>
+    <span class="spacer"></span>
+    <button class="btn ghost" id="btnExport" type="button">Als CSV speichern</button>
+    <button class="btn" id="btnFields" type="button">Felder verwalten</button>
+    <button class="btn" id="btnImport" type="button">Importieren</button>
+    <button class="btn primary" id="btnAdd" type="button">+ Kontakt</button>
+  </div>
+  <div class="bulk" id="bulk" hidden></div>
+  <div class="table-box" id="tableBox"></div>
+  <p class="status" id="status"></p>
+</main>
+
+<main class="wrap" id="teamView" hidden></main>
+<main class="wrap" id="calView" hidden></main>
+<main class="wrap" id="adminView" hidden></main>
+</div>
+
+<datalist id="dl-soz"></datalist>
+<datalist id="dl-beruf"></datalist>
+<div id="overlay"></div>
+<div id="toastHost"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+// Verbindung zur Supabase-Datenbank (Project Settings → API).
+// Beide Werte sind öffentlich und dürfen im Browser stehen; die Daten schützt die Datenbank selbst.
+window.KONTAKT_CONFIG = {
+  supabaseUrl: "https://rpfzlutjdyvdvbmlrldr.supabase.co",
+  supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwZnpsdXRqZHl2ZHZibWxybGRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1NjM2MzksImV4cCI6MjEwODEzOTYzOX0._kINj4WsQGKl9IDinImLHRpYEXjWCZV1PvEQm6qDl78",
+};
+</script>
+<script>
+(() => {
+  // ---------- Konfiguration ----------
+  const CFG = window.KONTAKT_CONFIG || {};
+  const LISTS = [
+    { id: "haupt", label: "Hauptliste", short: "H" },
+    { id: "pp", label: "PP-Liste", short: "PP" },
+    { id: "l30", label: "30er Liste", short: "30" },
+    { id: "kunden", label: "Kundenliste", short: "K" },
+  ];
+  const TYPES = { text: "Text", zahl: "Zahl", datum: "Datum", auswahl: "Auswahl", janein: "Ja/Nein" };
+
+  const S = {
+    sb: null, session: null, me: null,
+    view: "list", owner: null, ownerName: "", canEdit: false,
+    contacts: new Map(), fields: [], loadedContacts: false, channel: null,
+    list: "haupt", q: "", soz: "", sort: "name", dueOnly: false,
+    selected: new Set(), panel: null, openId: null,
+    team: [], users: [], access: [],
+    authMode: "login", authMsg: "", authErr: false,
+  };
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const today = () => new Date().toISOString().slice(0, 10);
+  const listById = (id) => LISTS.find((l) => l.id === id);
+  const uid8 = () => Math.random().toString(36).slice(2, 10);
+  const newId = () => (crypto.randomUUID ? crypto.randomUUID() : "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (c ^ (Math.random() * 16) >> (c / 4)).toString(16)));
+  const displayName = (p) => (p && (p.name || p.email)) || "Unbekannt";
+
+  try { const s = localStorage.getItem("kd-sort"); if (s) S.sort = s; } catch (e) {}
+  $("sort").value = S.sort;
+
+  // ---------- Umrechnung Datenbank <-> Seite ----------
+  function fromRow(r) {
+    return {
+      _id: r.id, name: r.name || "", soziotop: r.soziotop || "", beruf: r.beruf || "", info: r.info || "",
+      nextStep: r.next_step || "", nextDate: r.next_date || "", pp: r.pp || "",
+      custom: { ...(r.custom || {}) }, lists: Array.isArray(r.lists) && r.lists.length ? [...r.lists] : ["haupt"],
+      created: Date.parse(r.created_at) || Date.now(), updated: Date.parse(r.updated_at) || Date.now(),
+    };
+  }
+  function toRow(id, c) {
+    return {
+      id, owner: S.owner, name: c.name || "", soziotop: c.soziotop || "", beruf: c.beruf || "", info: c.info || "",
+      next_step: c.nextStep || "", next_date: c.nextDate || null, pp: c.pp || "",
+      custom: c.custom || {}, lists: c.lists && c.lists.length ? c.lists : ["haupt"],
+      created_at: new Date(c.created || Date.now()).toISOString(),
+    };
+  }
+  function blank(lists) {
+    return { name: "", soziotop: "", beruf: "", info: "", nextStep: "", nextDate: "", pp: "", custom: {}, lists: lists || [S.list], created: Date.now(), updated: Date.now() };
+  }
+
+  // ---------- Speichern ----------
+  const pending = new Map();
+  function saveContact(id, delay = 600) {
+    const c = S.contacts.get(id);
+    if (!c || !S.canEdit) return;
+    c.updated = Date.now();
+    let p = pending.get(id);
+    if (!p) { p = { timer: null, running: false, dirty: false }; pending.set(id, p); }
+    p.dirty = true;
+    clearTimeout(p.timer);
+    p.timer = setTimeout(() => { p.timer = null; flush(id); }, delay);
+    setStatus("Speichert …");
+  }
+  async function flush(id) {
+    const p = pending.get(id);
+    if (!p || p.running) return;
+    p.running = true;
+    while (p.dirty) {
+      p.dirty = false;
+      const c = S.contacts.get(id);
+      if (!c) break;
+      const { error } = await S.sb.from("contacts").upsert(toRow(id, c));
+      if (error) reportError(error);
+    }
+    p.running = false;
+    if (!p.dirty && p.timer === null) pending.delete(id);
+    if (pending.size === 0) setStatus("Alle Änderungen gespeichert.");
+  }
+  let settingsChain = Promise.resolve();
+  function saveSettings() {
+    const body = { owner: S.owner, fields: S.fields.map(({ _t, ...f }) => f), updated_at: new Date().toISOString() };
+    settingsChain = settingsChain.then(async () => {
+      const { error } = await S.sb.from("field_settings").upsert(body);
+      if (error) reportError(error);
+    });
+  }
+  function reportError(e) {
+    console.error(e);
+    const m = (e && e.message) || "";
+    if (/row-level security|permission/i.test(m)) toast("Dafür fehlt dir die Berechtigung. Frag den Admin nach Schreibzugriff.");
+    else if (/fetch|network/i.test(m)) toast("Keine Verbindung. Deine Änderung bleibt sichtbar, speichere gleich noch einmal.");
+    else toast("Speichern hat nicht geklappt: " + m);
+    setStatus("");
+  }
+  function setStatus(t) { $("status").textContent = t; }
+
+  // ---------- Daten einer Liste laden ----------
+  async function openOwner(ownerId, name, canEdit) {
+    if (S.channel) { S.sb.removeChannel(S.channel); S.channel = null; }
+    S.owner = ownerId; S.ownerName = name; S.canEdit = canEdit;
+    S.contacts = new Map(); S.fields = []; S.loadedContacts = false; S.selected.clear();
+    S.view = "list"; S.list = "haupt"; S.q = ""; S.soz = ""; S.dueOnly = false; $("q").value = "";
+    renderAll();
+    const [{ data: fs }, rows] = await Promise.all([
+      S.sb.from("field_settings").select("fields").eq("owner", ownerId).maybeSingle(),
+      fetchAllContacts(ownerId),
+    ]);
+    if (S.owner !== ownerId) return;
+    S.fields = fs && Array.isArray(fs.fields) ? fs.fields : [];
+    for (const r of rows) S.contacts.set(r.id, fromRow(r));
+    S.loadedContacts = true;
+    renderAll();
+    S.channel = S.sb.channel("owner-" + ownerId)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "contacts", filter: "owner=eq." + ownerId }, onRemote)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "contacts", filter: "owner=eq." + ownerId }, onRemote)
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "contacts" }, onRemote)
+      .on("postgres_changes", { event: "*", schema: "public", table: "field_settings", filter: "owner=eq." + ownerId }, (pl) => {
+        if (S.fields.some((f) => f._t) || !pl.new || !Array.isArray(pl.new.fields)) return;
+        if (JSON.stringify(pl.new.fields) === JSON.stringify(S.fields)) return;
+        S.fields = pl.new.fields; renderAll();
+      })
+      .subscribe();
+  }
+  async function fetchAllContacts(ownerId) {
+    const out = []; const step = 1000;
+    for (let from = 0; ; from += step) {
+      const { data, error } = await S.sb.from("contacts").select("*").eq("owner", ownerId).range(from, from + step - 1);
+      if (error) { reportError(error); break; }
+      out.push(...data);
+      if (data.length < step) break;
+    }
+    return out;
+  }
+  function onRemote(pl) {
+    const id = (pl.new && pl.new.id) || (pl.old && pl.old.id);
+    if (!id || pending.has(id)) return;
+    if (pl.eventType === "DELETE") { if (S.contacts.delete(id)) renderAll(); return; }
+    const inc = fromRow(pl.new);
+    const cur = S.contacts.get(id);
+    const strip = (c) => JSON.stringify({ ...c, updated: 0, created: 0 });
+    if (cur && strip(cur) === strip(inc)) return;
+    S.contacts.set(id, inc); renderAll();
+  }
+
+  // ---------- Hilfen für Kontakte ----------
+  function fieldsFor(listId) { return S.fields.filter((f) => !f.lists || f.lists.includes(listId)); }
+  function fieldsForContact(c) { return S.fields.filter((f) => !f.lists || f.lists.some((l) => (c.lists || []).includes(l))); }
+  function isDue(c) { return !!c.nextDate && c.nextDate <= today(); }
+  function getVal(c, key) { return key.startsWith("c:") ? (c.custom || {})[key.slice(2)] : c[key]; }
+  function setVal(c, key, v) { if (key.startsWith("c:")) c.custom = { ...(c.custom || {}), [key.slice(2)]: v }; else c[key] = v; }
+  function inList(listId) { return [...S.contacts.values()].filter((c) => (c.lists || []).includes(listId)); }
+  function visibleRows() {
+    const q = S.q.trim().toLowerCase();
+    let rows = inList(S.list);
+    if (S.soz) rows = rows.filter((c) => (c.soziotop || "") === S.soz);
+    if (S.dueOnly) rows = rows.filter(isDue);
+    if (q) rows = rows.filter((c) => [c.name, c.soziotop, c.beruf, c.info, c.nextStep, c.pp, ...Object.values(c.custom || {})].join(" ").toLowerCase().includes(q));
+    const by = {
+      name: (a, b) => (a.name || "").localeCompare(b.name || "", "de", { sensitivity: "base" }),
+      next: (a, b) => (a.nextDate || "9999").localeCompare(b.nextDate || "9999") || by.name(a, b),
+      updated: (a, b) => (b.updated || 0) - (a.updated || 0),
+      created: (a, b) => (b.created || 0) - (a.created || 0),
+    };
+    return rows.sort(by[S.sort] || by.name);
+  }
+  function putContact(id, c) { c._id = id; S.contacts.set(id, c); }
+  function toggleList(id, listId) {
+    if (!S.canEdit) return;
+    const c = S.contacts.get(id);
+    if (!c) return;
+    const has = c.lists.includes(listId);
+    if (has && c.lists.length === 1) { toast("Ein Kontakt braucht mindestens eine Liste. Zum Löschen den Kontakt öffnen."); return; }
+    const before = [...c.lists];
+    c.lists = has ? c.lists.filter((l) => l !== listId) : [...c.lists, listId];
+    saveContact(id, 0);
+    renderAll();
+    toast(`${c.name || "Kontakt"} ${has ? "aus " + listById(listId).label + " entfernt" : "zur " + listById(listId).label + " hinzugefügt"}.`, () => {
+      const cc = S.contacts.get(id); if (!cc) return; cc.lists = before; saveContact(id, 0); renderAll();
+    });
+  }
+
+  // ---------- Anmeldung ----------
+  function renderAuth() {
+    const m = S.authMode;
+    const msg = S.authMsg ? `<div class="msg ${S.authErr ? "err" : ""}" role="status">${esc(S.authMsg)}</div>` : "";
+    let form = "";
+    if (m === "login") form = `<form id="fLogin">
+        <label class="field"><span>E-Mail</span><input id="aEmail" type="email" autocomplete="username" required></label>
+        <label class="field"><span>Passwort</span><input id="aPass" type="password" autocomplete="current-password" required></label>
+        <button class="btn primary" type="submit">Anmelden</button>
+        <button class="linkbtn" type="button" data-mode="forgot">Passwort vergessen?</button></form>`;
+    else if (m === "signup") form = `<form id="fSignup">
+        <label class="field"><span>Dein Name</span><input id="aName" type="text" autocomplete="name" required></label>
+        <label class="field"><span>E-Mail</span><input id="aEmail" type="email" autocomplete="username" required></label>
+        <label class="field"><span>Passwort (mindestens 8 Zeichen)</span><input id="aPass" type="password" autocomplete="new-password" minlength="8" required></label>
+        <button class="btn primary" type="submit">Konto anlegen</button>
+        <p class="hint">Nach der Registrierung schaltet der Admin dein Konto frei.</p></form>`;
+    else if (m === "forgot") form = `<form id="fForgot">
+        <label class="field"><span>E-Mail</span><input id="aEmail" type="email" autocomplete="username" required></label>
+        <button class="btn primary" type="submit">Link zum Zurücksetzen senden</button>
+        <button class="linkbtn" type="button" data-mode="login">Zurück zur Anmeldung</button></form>`;
+    else if (m === "recover") form = `<form id="fRecover">
+        <label class="field"><span>Neues Passwort (mindestens 8 Zeichen)</span><input id="aPass" type="password" autocomplete="new-password" minlength="8" required></label>
+        <button class="btn primary" type="submit">Passwort speichern</button></form>`;
+    else if (m === "pending") form = `<p>Hallo ${esc(displayName(S.me))}, dein Konto ist angelegt und wartet auf die Freischaltung durch den Admin. Sobald das passiert ist, lade diese Seite neu.</p>
+        <button class="btn" type="button" id="btnLogout2">Abmelden</button>`;
+    else if (m === "setup") form = `<p>Diese Seite ist noch nicht mit der Datenbank verbunden. Trage in <code>config.js</code> die Supabase-Adresse und den öffentlichen Schlüssel ein.</p>`;
+    const tabs = m === "login" || m === "signup" ? `<div class="auth-tabs" role="tablist"><button type="button" role="tab" data-mode="login" aria-selected="${m === "login"}">Anmelden</button><button type="button" role="tab" data-mode="signup" aria-selected="${m === "signup"}">Registrieren</button></div>` : "";
+    $("authView").innerHTML = `<div class="auth-card"><h1>Kontakt-Dashboard</h1>${tabs}${msg}${form}</div>`;
+    const f = $("authView").querySelector("input"); if (f) f.focus();
+  }
+  function showAuth(mode, msg, err) {
+    S.authMode = mode; S.authMsg = msg || ""; S.authErr = !!err;
+    $("appView").hidden = true; $("authView").hidden = false;
+    renderAuth();
+  }
+  $("authView").addEventListener("click", async (e) => {
+    const t = e.target.closest("[data-mode], #btnLogout2"); if (!t) return;
+    if (t.id === "btnLogout2") return logout();
+    showAuth(t.dataset.mode);
+  });
+  $("authView").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector("button[type=submit]"); btn.disabled = true;
+    const email = $("aEmail") ? $("aEmail").value.trim() : "", pass = $("aPass") ? $("aPass").value : "";
+    let res;
+    if (e.target.id === "fLogin") {
+      res = await S.sb.auth.signInWithPassword({ email, password: pass });
+      if (res.error) showAuth("login", res.error.message === "Invalid login credentials" ? "E-Mail oder Passwort stimmt nicht." : res.error.message, true);
+    } else if (e.target.id === "fSignup") {
+      res = await S.sb.auth.signUp({ email, password: pass, options: { data: { name: $("aName").value.trim() }, emailRedirectTo: location.origin + location.pathname } });
+      if (res.error) showAuth("signup", res.error.message, true);
+      else if (!res.data.session) showAuth("login", "Fast geschafft: Bestätige deine E-Mail-Adresse über den Link in der Mail und melde dich dann hier an.");
+    } else if (e.target.id === "fForgot") {
+      res = await S.sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+      showAuth("login", res.error ? res.error.message : "Wenn ein Konto zu dieser Adresse existiert, ist eine Mail mit einem Link unterwegs.", !!res.error);
+    } else if (e.target.id === "fRecover") {
+      res = await S.sb.auth.updateUser({ password: pass });
+      if (res.error) showAuth("recover", res.error.message, true);
+      else { S.authMode = "login"; await enter(); toast("Neues Passwort gespeichert."); }
+    }
+    if (btn.isConnected) btn.disabled = false;
+  });
+  async function logout() {
+    if (S.channel) { S.sb.removeChannel(S.channel); S.channel = null; }
+    if (C.channel) { S.sb.removeChannel(C.channel); C.channel = null; C.loaded = false; }
+    await S.sb.auth.signOut();
+    S.me = null; S.owner = null; S.contacts = new Map();
+    showAuth("login", "Du bist abgemeldet.");
+  }
+  $("btnLogout").addEventListener("click", logout);
+
+  let entering = null;
+  function enter() { if (!entering) entering = doEnter().finally(() => { entering = null; }); return entering; }
+  async function doEnter() {
+    const { data: { session } } = await S.sb.auth.getSession();
+    S.session = session;
+    if (!session) return showAuth("login");
+    const { data: me, error } = await S.sb.from("profiles").select("*").eq("id", session.user.id).maybeSingle();
+    if (error || !me) return showAuth("login", "Dein Profil konnte nicht geladen werden. Versuche es gleich noch einmal.", true);
+    S.me = me;
+    if (!me.active) return showAuth("pending");
+    $("authView").hidden = true; $("appView").hidden = false;
+    $("whoName").textContent = displayName(me) + (me.role === "admin" ? " · Admin" : "");
+    await loadTeam();
+    const h = location.hash.slice(1);
+    if (h === "kalender") { await openOwner(me.id, displayName(me), true); await openCal(); }
+    else if (h === "team") { await openOwner(me.id, displayName(me), true); S.view = "team"; renderAll(); }
+    else if (h === "verwaltung" && me.role === "admin") { await openOwner(me.id, displayName(me), true); await showAdmin(); }
+    else await openOwner(me.id, displayName(me), true);
+  }
+
+  // ---------- Team und Verwaltung laden ----------
+  async function loadTeam() {
+    const { data, error } = await S.sb.from("access").select("owner, can_edit, profiles!access_owner_fkey(id, name, email)").eq("viewer", S.me.id);
+    S.team = error ? [] : data.filter((r) => r.profiles).map((r) => ({ id: r.owner, name: displayName(r.profiles), email: r.profiles.email, canEdit: r.can_edit }));
+    S.team.sort((a, b) => a.name.localeCompare(b.name, "de"));
+  }
+  async function loadAdmin() {
+    const [u, a] = await Promise.all([
+      S.sb.from("profiles").select("*").order("created_at"),
+      S.sb.from("access").select("*"),
+    ]);
+    S.users = u.data || []; S.access = a.data || [];
+  }
+  async function showAdmin() { S.view = "admin"; await loadAdmin(); renderAll(); }
+
+  // ---------- Darstellung ----------
+  function renderViews() {
+    const isMine = S.owner === S.me.id;
+    const b = (v, label) => `<button type="button" data-view="${v}" aria-pressed="${S.view === v && (v !== "list" || isMine)}">${label}</button>`;
+    $("views").innerHTML = b("list", "Meine Liste") + b("cal", "Kalender") + b("team", `Team${S.team.length ? " (" + S.team.length + ")" : ""}`) + (S.me.role === "admin" ? b("admin", "Verwaltung") : "");
+    $("listView").hidden = S.view !== "list";
+    $("teamView").hidden = S.view !== "team";
+    $("adminView").hidden = S.view !== "admin";
+    $("calView").hidden = S.view !== "cal";
+    $("tabs").hidden = S.view !== "list";
+  }
+  function renderTabs() {
+    $("tabs").innerHTML = LISTS.map((l) => `<button class="tab" role="tab" type="button" data-list="${l.id}" aria-selected="${l.id === S.list}" style="--c: var(--l-${l.id})"><span class="dot"></span>${esc(l.label)}<span class="n">${S.loadedContacts ? inList(l.id).length : "–"}</span></button>`).join("");
+    const all = S.contacts.size, due = [...S.contacts.values()].filter(isDue).length;
+    const whose = S.owner === S.me.id ? "Deine Liste" : "Liste von " + S.ownerName;
+    $("summary").textContent = S.view === "team" ? "Listen, die mit dir geteilt sind" : S.view === "admin" ? "Konten und Freigaben" : S.view === "cal" ? "To-Dos, Wochenplanung und Termine" : !S.loadedContacts ? "Kontakte werden geladen …" :
+      `${whose} · ${all} ${all === 1 ? "Kontakt" : "Kontakte"} · ${due} ${due === 1 ? "Next Step fällig" : "Next Steps fällig"}`;
+  }
+  function renderToolbar() {
+    const socs = [...new Set([...S.contacts.values()].map((c) => (c.soziotop || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "de"));
+    const berufe = [...new Set([...S.contacts.values()].map((c) => (c.beruf || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "de"));
+    if (S.soz && !socs.includes(S.soz)) S.soz = "";
+    $("soz").innerHTML = `<option value="">Alle Soziotope</option>` + socs.map((s) => `<option ${s === S.soz ? "selected" : ""}>${esc(s)}</option>`).join("");
+    $("dl-soz").innerHTML = socs.map((s) => `<option value="${esc(s)}"></option>`).join("");
+    $("dl-beruf").innerHTML = berufe.map((s) => `<option value="${esc(s)}"></option>`).join("");
+    const due = inList(S.list).filter(isDue).length;
+    $("dueOnly").textContent = `Fällig: ${due}`;
+    $("dueOnly").setAttribute("aria-pressed", String(S.dueOnly));
+    for (const b of ["btnAdd", "btnImport", "btnFields"]) { $(b).hidden = !S.canEdit; $(b).disabled = !S.loadedContacts; }
+    const mine = S.owner === S.me.id;
+    const ob = $("ownerBanner");
+    ob.hidden = mine;
+    if (!mine) ob.innerHTML = `<button class="btn" type="button" data-view="team">← Team</button><span>Du siehst die Liste von <strong>${esc(S.ownerName)}</strong>.</span><span class="pill ${S.canEdit ? "edit" : ""}">${S.canEdit ? "Darf bearbeiten" : "Nur lesen"}</span>`;
+  }
+  function renderBulk() {
+    const ids = [...S.selected].filter((id) => S.contacts.has(id));
+    const box = $("bulk");
+    box.hidden = ids.length === 0 || !S.canEdit;
+    if (box.hidden) { box.innerHTML = ""; return; }
+    const opts = LISTS.filter((l) => l.id !== S.list).map((l) => `<option value="${l.id}">${esc(l.label)}</option>`).join("");
+    box.innerHTML = `<strong>${ids.length} ausgewählt</strong>
+      <select id="bulkAdd" aria-label="Zusätzlich in Liste aufnehmen"><option value="">Auch aufnehmen in …</option>${opts}</select>
+      <select id="bulkMove" aria-label="In andere Liste verschieben"><option value="">Verschieben nach …</option>${opts}</select>
+      <button class="btn ghost" type="button" id="bulkClear">Auswahl aufheben</button>`;
+  }
+  function cellInput(c, id, key, field) {
+    const v = getVal(c, key);
+    const a = `data-id="${id}" data-f="${esc(key)}" ${S.canEdit ? "" : "disabled"}`;
+    if (field && field.type === "zahl") return `<input class="cell" type="number" ${a} value="${esc(v ?? "")}">`;
+    if (field && field.type === "datum") return `<input class="cell" type="date" ${a} value="${esc(v ?? "")}">`;
+    if (field && field.type === "auswahl") return `<select class="cell" ${a}><option value=""></option>${(field.options || []).map((o) => `<option ${o === v ? "selected" : ""}>${esc(o)}</option>`).join("")}</select>`;
+    if (field && field.type === "janein") return `<input type="checkbox" ${a} ${v ? "checked" : ""} aria-label="${esc(field.label)}">`;
+    const extra = key === "name" ? ' class="cell name" placeholder="Name"' : key === "soziotop" ? ' class="cell" list="dl-soz"' : key === "beruf" ? ' class="cell" list="dl-beruf"' : ' class="cell"';
+    return `<input type="text"${extra} ${a} value="${esc(v ?? "")}" title="${esc(v ?? "")}">`;
+  }
+  function renderTable() {
+    const box = $("tableBox");
+    if (!S.loadedContacts) { box.innerHTML = `<div class="empty"><h2>Kontakte werden geladen …</h2><p>Hier erscheint gleich die Liste mit Name, Soziotop, Beruf, Informationen, Next Step und PP.</p></div>`; return; }
+    const rows = visibleRows();
+    const custom = fieldsFor(S.list);
+    const label = listById(S.list).label;
+    if (!rows.length) {
+      const noneInList = inList(S.list).length === 0;
+      const actions = S.canEdit ? `<div class="row"><button class="btn primary" type="button" data-act="add">+ Kontakt anlegen</button><button class="btn" type="button" data-act="import">Liste einfügen</button></div>` : "";
+      box.innerHTML = noneInList
+        ? `<div class="empty"><h2>${esc(label)} ist noch leer</h2><p>${!S.canEdit ? "In dieser Liste stehen noch keine Kontakte." : S.contacts.size === 0 ? "Leg deinen ersten Kontakt an oder füge deine bestehende Liste aus Excel ein." : "Leg hier einen Kontakt an oder nimm Kontakte aus einer anderen Liste über die Listen-Knöpfe in jeder Zeile auf."}</p>${actions}</div>`
+        : `<div class="empty"><h2>Keine Treffer</h2><p>Kein Kontakt in der ${esc(label)} passt zu Suche oder Filter.</p><div class="row"><button class="btn" type="button" data-act="reset">Filter zurücksetzen</button></div></div>`;
+      return;
+    }
+    const allSel = rows.every((c) => S.selected.has(c._id));
+    const head = `<tr><th class="rn sticky1">#</th><th class="check sticky2"><input type="checkbox" id="selAll" ${allSel ? "checked" : ""} aria-label="Alle auswählen"></th>
+      <th class="sticky3">Name</th><th>Listen</th><th>Soziotop</th><th>Beruf</th><th>Informationen</th><th>Next Step</th><th>Fällig am</th><th>PP</th>
+      ${custom.map((f) => `<th class="custom" title="Eigenes Feld">${esc(f.label)}</th>`).join("")}
+      <th></th></tr>`;
+    const dis = S.canEdit ? "" : "disabled";
+    const body = rows.map((c, i) => {
+      const id = c._id;
+      return `<tr class="${S.selected.has(id) ? "sel" : ""}" data-row="${id}">
+        <td class="rn sticky1">${i + 1}</td>
+        <td class="check sticky2"><input type="checkbox" data-sel="${id}" ${S.selected.has(id) ? "checked" : ""} aria-label="Auswählen"></td>
+        <td class="w-name sticky3">${cellInput(c, id, "name")}</td>
+        <td><div class="lists">${LISTS.map((l) => `<button type="button" class="lchip" style="--c: var(--l-${l.id})" data-toggle="${id}" data-list="${l.id}" aria-pressed="${c.lists.includes(l.id)}" title="${esc(l.label)}" ${dis}>${l.short}</button>`).join("")}</div></td>
+        <td class="w-soz">${cellInput(c, id, "soziotop")}</td>
+        <td class="w-beruf">${cellInput(c, id, "beruf")}</td>
+        <td class="w-info">${cellInput(c, id, "info")}</td>
+        <td class="w-ns">${cellInput(c, id, "nextStep")}</td>
+        <td class="date-c ${isDue(c) ? "due" : ""}"><div class="date-wrap"><input class="cell" type="date" data-id="${id}" data-f="nextDate" value="${esc(c.nextDate || "")}" aria-label="Fällig am" ${dis}><button type="button" class="cal-btn" data-cal="${id}" title="In den Kalender eintragen" ${c.nextDate ? "" : "hidden"}>Kalender</button></div></td>
+        <td class="w-pp">${cellInput(c, id, "pp")}</td>
+        ${custom.map((f) => `<td class="w-c ${f.type === "janein" ? "bool" : ""} ${f.type === "datum" ? "date-c" : ""}">${cellInput(c, id, "c:" + f.id, f)}</td>`).join("")}
+        <td class="act"><button type="button" class="open-btn" data-open="${id}" title="Alle Angaben ansehen">Öffnen</button></td>
+      </tr>`;
+    }).join("");
+    box.innerHTML = `<table><thead>${head}</thead><tbody>${body}</tbody></table>`;
+  }
+  function renderTeam() {
+    const v = $("teamView");
+    v.innerHTML = `<h2 class="page-title">Team</h2>
+      <p class="hint">Hier stehen die Listen anderer, auf die du Zugriff hast. Freigaben richtet der Admin unter „Verwaltung“ ein.</p>
+      ${S.team.length ? `<div class="team-grid">${S.team.map((t) => `<button type="button" class="team-card" data-owner="${t.id}"><h3>${esc(t.name)}</h3><span>${esc(t.email)}</span><span class="pill ${t.canEdit ? "edit" : ""}" style="align-self:flex-start">${t.canEdit ? "Darf bearbeiten" : "Nur lesen"}</span></button>`).join("")}</div>`
+        : `<div class="empty"><h2>Noch keine geteilten Listen</h2><p>Sobald der Admin dir Zugriff auf die Liste einer anderen Person gibt, erscheint sie hier.</p></div>`}`;
+  }
+  function renderAdmin() {
+    const v = $("adminView");
+    const byId = Object.fromEntries(S.users.map((u) => [u.id, u]));
+    const waiting = S.users.filter((u) => !u.active).length;
+    const users = S.users.map((u) => `<tr>
+        <td><input type="text" data-uname="${u.id}" value="${esc(u.name)}" aria-label="Name"></td>
+        <td style="overflow-wrap:anywhere">${esc(u.email)}</td>
+        <td><select data-urole="${u.id}" ${u.id === S.me.id ? "disabled" : ""}><option value="user" ${u.role === "user" ? "selected" : ""}>Mitglied</option><option value="admin" ${u.role === "admin" ? "selected" : ""}>Admin</option></select></td>
+        <td>${u.id === S.me.id ? `<span class="pill edit">Aktiv (du)</span>` : `<button type="button" class="btn ${u.active ? "" : "primary"}" data-uactive="${u.id}" data-to="${!u.active}">${u.active ? "Sperren" : "Freischalten"}</button>`}</td>
+        <td class="meta">${new Date(u.created_at).toLocaleDateString("de-DE")}</td></tr>`).join("");
+    const shares = S.users.filter((u) => u.active).map((o) => {
+      const grants = S.access.filter((a) => a.owner === o.id);
+      const free = S.users.filter((u) => u.id !== o.id && u.active && !grants.some((g) => g.viewer === u.id));
+      return `<tr><td><strong>${esc(displayName(o))}</strong></td><td><div class="share-row">
+          ${grants.map((g) => `<span class="share-chip">${esc(displayName(byId[g.viewer]))} · <select data-gedit="${o.id}|${g.viewer}" aria-label="Recht"><option value="0" ${g.can_edit ? "" : "selected"}>liest</option><option value="1" ${g.can_edit ? "selected" : ""}>bearbeitet</option></select><button type="button" data-grevoke="${o.id}|${g.viewer}" aria-label="Zugriff entfernen" title="Zugriff entfernen">×</button></span>`).join("") || `<span class="hint">Niemand außer ${esc(displayName(o))}</span>`}
+          ${free.length ? `<select data-gadd="${o.id}" aria-label="Zugriff geben"><option value="">+ Zugriff geben …</option>${free.map((u) => `<option value="${u.id}">${esc(displayName(u))}</option>`).join("")}</select>` : ""}
+        </div></td></tr>`;
+    }).join("");
+    v.innerHTML = `<h2 class="page-title">Verwaltung</h2>
+      <p class="hint">Neue Personen registrieren sich selbst auf der Anmeldeseite und erscheinen hier mit „Freischalten“. Gesperrte Konten können sich anmelden, sehen aber nichts. Ein Konto ganz löschen kannst du im Supabase-Dashboard unter Authentication → Users.</p>
+      <h3 class="section-title">Konten ${waiting ? `<span class="pill warn">${waiting} warten auf Freischaltung</span>` : ""}</h3>
+      <div class="admin-box"><table><thead><tr><th>Name</th><th>E-Mail</th><th>Rolle</th><th>Status</th><th>Seit</th></tr></thead><tbody>${users}</tbody></table></div>
+      <h3 class="section-title">Wer sieht welche Liste</h3>
+      <p class="hint">Jede Zeile ist die Liste einer Person. Wer dort eingetragen ist, findet sie unter „Team“. „liest“ heißt nur ansehen, „bearbeitet“ heißt auch ändern.</p>
+      <div class="admin-box"><table><thead><tr><th>Liste von</th><th>Zugriff haben</th></tr></thead><tbody>${shares}</tbody></table></div>`;
+  }
+  function renderAll() {
+    if (!S.me) return;
+    const a = document.activeElement;
+    const keep = a && a.dataset && a.dataset.f && a.closest("#tableBox") ? { id: a.dataset.id, f: a.dataset.f, s: a.selectionStart, e: a.selectionEnd } : null;
+    renderViews(); renderTabs();
+    if (S.view === "list") { renderToolbar(); renderBulk(); renderTable(); }
+    else if (S.view === "team") renderTeam();
+    else if (S.view === "admin") renderAdmin();
+    else if (S.view === "cal") renderCal();
+    if (keep) {
+      const el = document.querySelector(`#tableBox [data-id="${keep.id}"][data-f="${CSS.escape(keep.f)}"]`);
+      if (el) { el.focus(); try { if (keep.s != null) el.setSelectionRange(keep.s, keep.e); } catch (e) {} }
+    }
+    if (S.panel) renderPanel();
+  }
+
+  // ---------- Seitenleiste ----------
+  function openPanel(kind, id) { S.panel = kind; S.openId = id || null; renderPanel(true); }
+  function closePanel() { S.panel = null; S.openId = null; $("overlay").innerHTML = ""; renderAll(); }
+  function renderPanel(fresh) {
+    const host = $("overlay");
+    if (!fresh && host.querySelector(".drawer") && host.contains(document.activeElement)) return;
+    if (!fresh && S.panel === "contact" && !S.contacts.has(S.openId)) { closePanel(); return; }
+    let html = "";
+    if (S.panel === "contact") html = contactPanel();
+    else if (S.panel === "fields") html = fieldsPanel();
+    else if (S.panel === "import") html = importPanel();
+    else { host.innerHTML = ""; return; }
+    const scroll = host.querySelector(".drawer-body")?.scrollTop || 0;
+    host.innerHTML = `<div class="scrim" data-act="close"></div><aside class="drawer" role="dialog" aria-modal="true">${html}</aside>`;
+    const body = host.querySelector(".drawer-body"); if (body && !fresh) body.scrollTop = scroll;
+    if (fresh) { const f = host.querySelector("[data-autofocus]"); if (f) f.focus(); }
+  }
+  function dField(c, id, key, label, field, attrs = "") {
+    const v = getVal(c, key);
+    const a = `data-did="${id}" data-f="${esc(key)}" ${S.canEdit ? "" : "disabled"}`;
+    let input;
+    if (key === "info") input = `<textarea ${a}>${esc(v || "")}</textarea>`;
+    else if (field && field.type === "zahl") input = `<input type="number" ${a} value="${esc(v ?? "")}">`;
+    else if ((field && field.type === "datum") || key === "nextDate") input = `<input type="date" ${a} value="${esc(v ?? "")}">`;
+    else if (field && field.type === "auswahl") input = `<select ${a}><option value=""></option>${(field.options || []).map((o) => `<option ${o === v ? "selected" : ""}>${esc(o)}</option>`).join("")}</select>`;
+    else if (field && field.type === "janein") return `<label class="field" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" ${a} ${v ? "checked" : ""} style="width:auto"> <span>${esc(label)}</span></label>`;
+    else input = `<input type="text" ${a} value="${esc(v ?? "")}" ${attrs}>`;
+    return `<label class="field"><span>${esc(label)}</span>${input}</label>`;
+  }
+  function contactPanel() {
+    const id = S.openId, c = S.contacts.get(id);
+    const custom = fieldsForContact(c);
+    const fmt = (t) => t ? new Date(t).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" }) : "–";
+    const dis = S.canEdit ? "" : "disabled";
+    return `<div class="drawer-head"><h2>${esc(c.name || "Neuer Kontakt")}</h2><button class="btn ghost" type="button" data-act="close">Schließen</button></div>
+      <div class="drawer-body">
+        ${dField(c, id, "name", "Name", null, 'data-autofocus placeholder="Vor- und Nachname"')}
+        <div class="grid2">${dField(c, id, "soziotop", "Soziotop", null, 'list="dl-soz" placeholder="z. B. Sportverein"')}${dField(c, id, "beruf", "Beruf", null, 'list="dl-beruf"')}</div>
+        ${dField(c, id, "info", "Informationen")}
+        <div class="grid2">${dField(c, id, "nextStep", "Next Step", null, 'placeholder="z. B. Termin für Analyse"')}${dField(c, id, "nextDate", "Fällig am")}</div>
+        <div class="cal-box">
+          <label class="field"><span>Uhrzeit (leer = ganztägig)</span><input type="time" id="calTime"></label>
+          <label class="field"><span>Dauer</span><select id="calDur"><option value="30">30 Minuten</option><option value="60" selected>1 Stunde</option><option value="90">1,5 Stunden</option><option value="120">2 Stunden</option></select></label>
+          <button class="btn primary" type="button" data-cal="${id}" id="calBtn">In Kalender eintragen</button>
+          <p class="hint" style="flex-basis:100%">Öffnet den Termin im Kalender deines iPhones oder Computers, du bestätigst ihn dort mit „Hinzufügen“. Eine Erinnerung ist schon eingestellt.</p>
+        </div>
+        ${dField(c, id, "pp", "PP")}
+        ${custom.length ? `<h3 class="section-title">Eigene Felder</h3>` + custom.map((f) => dField(c, id, "c:" + f.id, f.label, f)).join("") : ""}
+        <h3 class="section-title">Listen</h3>
+        ${S.canEdit ? `<p class="hint">Antippen, um den Kontakt in eine Liste aufzunehmen oder herauszunehmen. Ein Kontakt kann in mehreren Listen stehen.</p>` : ""}
+        <div class="lists" style="padding:0;flex-wrap:wrap">${LISTS.map((l) => `<button type="button" class="lchip wide" style="--c: var(--l-${l.id})" data-toggle="${id}" data-list="${l.id}" aria-pressed="${c.lists.includes(l.id)}" ${dis}>${esc(l.label)}</button>`).join("")}</div>
+        <p class="meta">Angelegt ${fmt(c.created)} · Bearbeitet ${fmt(c.updated)}</p>
+      </div>
+      <div class="drawer-foot">${S.canEdit ? `<button class="btn danger" type="button" data-del="${id}">Kontakt löschen</button>` : ""}<span class="spacer"></span><button class="btn primary" type="button" data-act="close">Fertig</button></div>`;
+  }
+  function fieldsPanel() {
+    const rows = S.fields.map((f) => `<div class="frow">
+        <input type="text" data-frename="${f.id}" value="${esc(f.label)}" aria-label="Feldname">
+        <button class="btn danger" type="button" data-fdel="${f.id}">Entfernen</button>
+        <div class="scopes"><span class="type">${TYPES[f.type] || "Text"}${f.type === "auswahl" ? ": " + esc((f.options || []).join(", ")) : ""} · gilt für:</span>
+          ${LISTS.map((l) => `<label><input type="checkbox" data-fscope="${f.id}" value="${l.id}" ${!f.lists || f.lists.includes(l.id) ? "checked" : ""}>${esc(l.label)}</label>`).join("")}
+        </div></div>`).join("");
+    return `<div class="drawer-head"><h2>Felder verwalten</h2><button class="btn ghost" type="button" data-act="close">Schließen</button></div>
+      <div class="drawer-body">
+        <p class="hint">Name, Soziotop, Beruf, Informationen, Next Step und PP sind in jeder Liste fest dabei. Hier legst du zusätzliche Felder an und bestimmst, in welchen Listen sie erscheinen.</p>
+        <h3 class="section-title">Neues Feld</h3>
+        <form id="fAdd" class="field" style="gap:10px">
+          <div class="grid2">
+            <label class="field"><span>Bezeichnung</span><input id="fLabel" type="text" required placeholder="z. B. Geburtstag" data-autofocus></label>
+            <label class="field"><span>Typ</span><select id="fType">${Object.entries(TYPES).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select></label>
+          </div>
+          <label class="field" id="fOptWrap" hidden><span>Auswahlmöglichkeiten, mit Komma getrennt</span><input id="fOpts" type="text" placeholder="heiß, warm, kalt"></label>
+          <div class="scopes" style="display:flex;gap:10px;flex-wrap:wrap"><span class="hint">Gilt für:</span>${LISTS.map((l) => `<label style="display:inline-flex;gap:4px;align-items:center"><input type="checkbox" name="fScope" value="${l.id}" checked>${esc(l.label)}</label>`).join("")}</div>
+          <div><button class="btn primary" type="submit">Feld hinzufügen</button></div>
+        </form>
+        <h3 class="section-title">Eigene Felder (${S.fields.length})</h3>
+        ${rows || `<p class="hint">Noch keine eigenen Felder.</p>`}
+      </div>`;
+  }
+  let importText = "";
+  function importPreview(p) {
+    return !importText.trim() ? "" : !p.rows.length ? `<div class="preview">Keine Kontakte erkannt. Die erste Zeile muss Spaltennamen enthalten, z. B. Name, Beruf, Soziotop.</div>` :
+      `<div class="preview"><strong>${p.rows.length} Kontakte erkannt.</strong><br>Zugeordnet: ${esc(p.mapped.join(", ") || "–")}${p.newFields.length ? `<br>Neue eigene Felder: ${esc(p.newFields.join(", "))}` : ""}${p.noName ? `<br>${p.noName} Zeilen ohne Name werden übersprungen.` : ""}${p.hasLists ? `<br>Die Spalte „Listen“ wird übernommen, sonst kommt der Kontakt in die gewählte Liste.` : ""}</div>`;
+  }
+  function importPanel() {
+    const p = parseImport(importText);
+    return `<div class="drawer-head"><h2>Liste importieren</h2><button class="btn ghost" type="button" data-act="close">Schließen</button></div>
+      <div class="drawer-body">
+        <p class="hint">Markiere deine bestehende Liste in Excel, Numbers oder Google Sheets inklusive Kopfzeile, kopiere sie und füge sie hier ein. Eine CSV aus dem bisherigen Dashboard funktioniert auch, inklusive der Listen-Zuordnung. Spalten, die keinem Basisfeld entsprechen, werden als eigene Felder angelegt.</p>
+        <label class="field"><span>Eingefügte Liste</span><textarea class="paste" id="impText" data-autofocus placeholder="Name&#9;Soziotop&#9;Beruf&#9;Informationen&#9;Next Step&#9;PP">${esc(importText)}</textarea></label>
+        <label class="field"><span>CSV-Datei statt Einfügen</span><input type="file" id="impFile" accept=".csv,.txt,text/csv"></label>
+        <label class="field"><span>Aufnehmen in</span><select id="impList">${LISTS.map((l) => `<option value="${l.id}" ${l.id === S.list ? "selected" : ""}>${esc(l.label)}</option>`).join("")}</select></label>
+        <div id="impPrev">${importPreview(p)}</div>
+      </div>
+      <div class="drawer-foot"><span class="status" id="impStatus"></span><span class="spacer"></span><button class="btn primary" type="button" id="impGo" ${p.rows.length ? "" : "disabled"}>Importieren</button></div>`;
+  }
+
+  // ---------- Import ----------
+  const ALIAS = {
+    name: ["name", "kontakt", "vollständiger name", "vor- und nachname"],
+    soziotop: ["soziotop", "soziotope", "umfeld", "kreis"],
+    beruf: ["beruf", "job", "tätigkeit", "position"],
+    info: ["informationen", "information", "info", "infos", "notizen", "notiz", "bemerkung", "bemerkungen"],
+    nextStep: ["next step", "nextstep", "next steps", "nächster schritt", "naechster schritt"],
+    nextDate: ["fällig", "fällig am", "datum", "termin", "next step datum"],
+    pp: ["pp"],
+  };
+  function splitRows(text) {
+    text = text.replace(/^﻿/, "");
+    const first = text.split(/\r?\n/)[0] || "";
+    const d = first.includes("\t") ? "\t" : (first.split(";").length > first.split(",").length ? ";" : ",");
+    const rows = []; let row = [], cur = "", q = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (q) { if (ch === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
+      else if (ch === '"' && cur === "") q = true;
+      else if (ch === d) { row.push(cur); cur = ""; }
+      else if (ch === "\n" || ch === "\r") { if (ch === "\r" && text[i + 1] === "\n") i++; row.push(cur); rows.push(row); row = []; cur = ""; }
+      else cur += ch;
+    }
+    if (cur !== "" || row.length) { row.push(cur); rows.push(row); }
+    return rows.filter((r) => r.some((x) => x.trim()));
+  }
+  function parseImport(text) {
+    const out = { rows: [], mapped: [], newFields: [], noName: 0, hasLists: false };
+    if (!text.trim()) return out;
+    const all = splitRows(text);
+    if (all.length < 2) return out;
+    const norm = (s) => s.toLowerCase().replace(/\s+/g, " ").trim();
+    const cols = all[0].map((h) => h.trim()).map((h) => {
+      const n = norm(h);
+      if (n === "vorname") return { kind: "first", h };
+      if (n === "nachname") return { kind: "last", h };
+      if (n === "listen") return { kind: "lists", h };
+      for (const [k, al] of Object.entries(ALIAS)) if (al.includes(n)) return { kind: "base", key: k, h };
+      const ex = S.fields.find((f) => norm(f.label) === n);
+      if (ex) return { kind: "custom", id: ex.id, h };
+      return h ? { kind: "new", h } : { kind: "skip", h };
+    });
+    out.mapped = cols.filter((c) => c.kind !== "new" && c.kind !== "skip").map((c) => c.h);
+    out.newFields = cols.filter((c) => c.kind === "new").map((c) => c.h);
+    out.hasLists = cols.some((c) => c.kind === "lists");
+    for (const r of all.slice(1)) {
+      const o = { custom: {}, newVals: {}, lists: [] }; let first = "", last = "";
+      cols.forEach((c, i) => {
+        const v = (r[i] || "").trim(); if (!v) return;
+        if (c.kind === "base") o[c.key] = c.key === "nextDate" ? toIsoDate(v) : v;
+        else if (c.kind === "first") first = v;
+        else if (c.kind === "last") last = v;
+        else if (c.kind === "lists") o.lists = v.split(",").map((s) => LISTS.find((l) => norm(l.label) === norm(s) || norm(l.short) === norm(s))).filter(Boolean).map((l) => l.id);
+        else if (c.kind === "custom") o.custom[c.id] = v;
+        else if (c.kind === "new") o.newVals[c.h] = v;
+      });
+      if (!o.name && (first || last)) o.name = [first, last].filter(Boolean).join(" ");
+      if (!o.name) { out.noName++; continue; }
+      out.rows.push(o);
+    }
+    return out;
+  }
+  function toIsoDate(v) {
+    const m = v.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})$/);
+    if (m) { const y = m[3].length === 2 ? "20" + m[3] : m[3]; return `${y}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`; }
+    return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : "";
+  }
+  async function runImport() {
+    const p = parseImport(importText);
+    if (!p.rows.length) return;
+    const listId = $("impList").value;
+    $("impGo").disabled = true;
+    const newIds = {};
+    if (p.newFields.length) {
+      for (const h of p.newFields) { const f = { id: uid8(), label: h, type: "text", lists: null }; S.fields.push(f); newIds[h] = f.id; }
+      saveSettings();
+    }
+    const batch = p.rows.map((r) => {
+      const custom = { ...r.custom };
+      for (const [h, v] of Object.entries(r.newVals)) custom[newIds[h]] = v;
+      const c = { ...blank(r.lists.length ? r.lists : [listId]), ...r, custom, lists: r.lists.length ? r.lists : [listId] };
+      delete c.newVals;
+      return [newId(), c];
+    });
+    let done = 0;
+    for (let i = 0; i < batch.length; i += 200) {
+      const chunk = batch.slice(i, i + 200);
+      const { error } = await S.sb.from("contacts").insert(chunk.map(([id, c]) => toRow(id, c)));
+      if (error) { reportError(error); break; }
+      for (const [id, c] of chunk) putContact(id, c);
+      done += chunk.length;
+      const st = $("impStatus"); if (st) st.textContent = `${done} von ${batch.length} gespeichert …`;
+    }
+    importText = "";
+    S.list = listId;
+    closePanel();
+    toast(`${done} Kontakte importiert.`);
+  }
+
+  // ---------- Kalender ----------
+  function icsText(s) { return String(s || "").replace(/\\/g, "\\\\").replace(/\r?\n/g, "\\n").replace(/[,;]/g, (m) => "\\" + m); }
+  function icsFold(line) { const out = []; while (line.length > 74) { out.push(line.slice(0, 74)); line = " " + line.slice(74); } out.push(line); return out.join("\r\n"); }
+  function addToCalendar(id) {
+    const c = S.contacts.get(id); if (!c) return;
+    if (!c.nextDate) { toast("Trag zuerst bei „Fällig am“ ein Datum ein."); return; }
+    const time = ($("calTime") && S.openId === id && $("calTime").value) || "";
+    const dur = Number(($("calDur") && S.openId === id && $("calDur").value) || 60);
+    const d = c.nextDate.replace(/-/g, "");
+    const pad = (n) => String(n).padStart(2, "0");
+    const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
+    let when;
+    if (time) {
+      const [h, m] = time.split(":").map(Number);
+      const start = new Date(c.nextDate + "T00:00:00"); start.setHours(h, m);
+      const end = new Date(start.getTime() + dur * 60000);
+      const f = (x) => `${x.getFullYear()}${pad(x.getMonth() + 1)}${pad(x.getDate())}T${pad(x.getHours())}${pad(x.getMinutes())}00`;
+      when = [`DTSTART:${f(start)}`, `DTEND:${f(end)}`, "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:Erinnerung", "TRIGGER:-PT30M", "END:VALARM"];
+    } else {
+      const next = new Date(c.nextDate + "T12:00:00"); next.setDate(next.getDate() + 1);
+      when = [`DTSTART;VALUE=DATE:${d}`, `DTEND;VALUE=DATE:${next.getFullYear()}${pad(next.getMonth() + 1)}${pad(next.getDate())}`, "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:Erinnerung", "TRIGGER:PT9H", "END:VALARM"];
+    }
+    const title = (c.nextStep ? c.nextStep + " – " : "Next Step – ") + (c.name || "Kontakt");
+    const desc = [c.beruf && "Beruf: " + c.beruf, c.soziotop && "Soziotop: " + c.soziotop, c.pp && "PP: " + c.pp, c.info].filter(Boolean).join("\n");
+    const valarmAt = when.indexOf("BEGIN:VALARM");
+    const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Kontakt-Dashboard//DE", "CALSCALE:GREGORIAN", "BEGIN:VEVENT",
+      `UID:${id}-${d}@kontakt-dashboard`, `DTSTAMP:${stamp}`, ...when.slice(0, valarmAt),
+      `SUMMARY:${icsText(title)}`, desc ? `DESCRIPTION:${icsText(desc)}` : null, ...when.slice(valarmAt), "END:VEVENT", "END:VCALENDAR"].filter(Boolean);
+    const ics = lines.map(icsFold).join("\r\n") + "\r\n";
+    const a = document.createElement("a");
+    a.href = "data:text/calendar;charset=utf-8," + encodeURIComponent(ics);
+    a.download = `${(c.name || "termin").replace(/[^\wäöüÄÖÜß-]+/g, "-")}-${c.nextDate}.ics`;
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  // ---------- Export ----------
+  function exportCsv() {
+    const rows = visibleRows(), custom = fieldsFor(S.list);
+    const head = ["Name", "Soziotop", "Beruf", "Informationen", "Next Step", "Fällig am", "PP", ...custom.map((f) => f.label), "Listen"];
+    const q = (v) => { const s = v === true ? "ja" : v === false || v == null ? "" : String(v); return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+    const lines = [head.map(q).join(";")].concat(rows.map((c) => [c.name, c.soziotop, c.beruf, c.info, c.nextStep, c.nextDate, c.pp, ...custom.map((f) => (c.custom || {})[f.id]), c.lists.map((l) => listById(l).label).join(", ")].map(q).join(";")));
+    const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${listById(S.list).label.replace(/\s+/g, "-")}-${today()}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+
+  // ---------- Kalender: Daten ----------
+  const DAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+  const DAYS_LONG = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
+  const PRESETS = [
+    { label: "Mo–Do abends 18–21 Uhr", win: [1, 2, 3, 4].map((d) => ({ day: d, start: "18:00", end: "21:00" })) },
+    { label: "Mo–Fr vormittags 9–12 Uhr", win: [1, 2, 3, 4, 5].map((d) => ({ day: d, start: "09:00", end: "12:00" })) },
+    { label: "Mo–Fr nachmittags 14–17 Uhr", win: [1, 2, 3, 4, 5].map((d) => ({ day: d, start: "14:00", end: "17:00" })) },
+    { label: "Samstag 10–14 Uhr", win: [{ day: 6, start: "10:00", end: "14:00" }] },
+  ];
+  const C = {
+    tab: "woche", week: mondayOf(new Date()), loaded: false,
+    settings: { avail: [], focus: [], slot_min: 60, weeks: 4, blocked: [] },
+    todos: [], bookings: [], members: [], access: [], nextSteps: [],
+    target: null, targetSettings: null, targetBusy: [], previews: {}, pick: null, channel: null, showDone: false,
+  };
+  function mondayOf(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
+  function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+  function isoDate(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+  function weekday(d) { return ((d.getDay() + 6) % 7) + 1; }
+  function atTime(d, hhmm) { const [h, m] = hhmm.split(":").map(Number); const x = new Date(d); x.setHours(h, m, 0, 0); return x; }
+  function hm(d) { return d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }); }
+  function dayLabel(d) { return `${DAYS[weekday(d) - 1]} ${d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })}`; }
+  function windowsOn(template, d) {
+    return (template || []).filter((w) => w.day === weekday(d) && w.start < w.end).map((w) => ({ s: atTime(d, w.start), e: atTime(d, w.end) }))
+      .sort((a, b) => a.s - b.s);
+  }
+  function overlaps(a, b) { return a.s < b.e && b.s < a.e; }
+  function subtract(win, busy) {
+    let parts = [win];
+    for (const b of busy) {
+      const next = [];
+      for (const p of parts) {
+        if (!overlaps(p, b)) { next.push(p); continue; }
+        if (b.s > p.s) next.push({ s: p.s, e: b.s });
+        if (b.e < p.e) next.push({ s: b.e, e: p.e });
+      }
+      parts = next;
+    }
+    return parts.filter((p) => p.e - p.s >= 5 * 60000);
+  }
+  function ceilQuarter(d) { const x = new Date(d); const m = x.getMinutes(); x.setSeconds(0, 0); if (m % 15) x.setMinutes(m + 15 - (m % 15)); return x; }
+  function freeSlots(settings, busy, days) {
+    const out = []; const now = new Date(Date.now() + 15 * 60000);
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    const len = (settings.slot_min || 60) * 60000;
+    for (let i = 0; i < days; i++) {
+      const d = addDays(start, i);
+      if ((settings.blocked || []).includes(isoDate(d))) continue;
+      for (const w of windowsOn(settings.avail, d)) {
+        for (let t = w.s.getTime(); t + len <= w.e.getTime(); t += len) {
+          const slot = { s: new Date(t), e: new Date(t + len) };
+          if (slot.s < now) continue;
+          if (busy.some((b) => overlaps(slot, b))) continue;
+          out.push(slot);
+        }
+      }
+    }
+    return out;
+  }
+  function myBusy() {
+    const b = C.bookings.filter((x) => x.owner === S.me.id).map((x) => ({ s: new Date(x.start_at), e: new Date(x.end_at) }));
+    const t = C.todos.filter((x) => !x.done && x.planned_start).map((x) => ({ s: new Date(x.planned_start), e: new Date(new Date(x.planned_start).getTime() + x.duration_min * 60000) }));
+    return b.concat(t);
+  }
+  function settingsRow(row) {
+    return {
+      avail: Array.isArray(row && row.avail) ? row.avail : [], focus: Array.isArray(row && row.focus) ? row.focus : [],
+      slot_min: (row && row.slot_min) || 60, weeks: (row && row.weeks) || 4, blocked: Array.isArray(row && row.blocked) ? row.blocked : [],
+    };
+  }
+
+  async function loadCal() {
+    const me = S.me.id;
+    const soon = isoDate(addDays(new Date(), 14));
+    const since = addDays(new Date(), -30).toISOString();
+    const [st, td, bk, mb, ac, ns] = await Promise.all([
+      S.sb.from("cal_settings").select("*").eq("owner", me).maybeSingle(),
+      S.sb.from("todos").select("*").eq("owner", me).order("created_at"),
+      S.sb.from("bookings").select("*").or(`owner.eq.${me},booker.eq.${me}`).gte("end_at", since).order("start_at"),
+      S.sb.rpc("list_members"),
+      S.sb.from("cal_access").select("*"),
+      S.sb.from("contacts").select("id, name, next_step, next_date").eq("owner", me).not("next_date", "is", null).lte("next_date", soon),
+    ]);
+    const err = [st, td, bk, mb, ac, ns].find((r) => r.error);
+    if (err) { toast("Kalender konnte nicht geladen werden. Ist kalender.sql in Supabase ausgeführt? (" + err.error.message + ")"); }
+    C.settings = settingsRow(st.data);
+    C.todos = td.data || []; C.bookings = bk.data || []; C.members = mb.data || []; C.access = ac.data || []; C.nextSteps = ns.data || [];
+    C.loaded = true;
+    if (!C.channel) {
+      let t = null;
+      const again = () => { clearTimeout(t); t = setTimeout(async () => { await loadCal(); if (S.view === "cal") renderAll(); }, 400); };
+      C.channel = S.sb.channel("cal-" + me)
+        .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, again)
+        .on("postgres_changes", { event: "*", schema: "public", table: "todos", filter: "owner=eq." + me }, again)
+        .subscribe();
+    }
+  }
+  async function openCal(tab) {
+    S.view = "cal"; if (tab) C.tab = tab;
+    renderAll();
+    await loadCal();
+    if (C.tab === "buchen") await loadPreviews();
+    renderAll();
+  }
+  async function saveCalSettings() {
+    const { error } = await S.sb.from("cal_settings").upsert({ owner: S.me.id, ...C.settings, updated_at: new Date().toISOString() });
+    if (error) toast("Einstellungen nicht gespeichert: " + error.message);
+  }
+  async function loadTarget(ownerId) {
+    const days = 7 * 12;
+    const [st, busy] = await Promise.all([
+      S.sb.from("cal_settings").select("*").eq("owner", ownerId).maybeSingle(),
+      S.sb.rpc("cal_busy", { p_owner: ownerId, p_from: new Date().toISOString(), p_to: addDays(new Date(), days).toISOString() }),
+    ]);
+    const settings = settingsRow(st.data);
+    const b = (busy.data || []).map((x) => ({ s: new Date(x.start_at), e: new Date(x.end_at) }));
+    return { settings, busy: b, slots: freeSlots(settings, b, settings.weeks * 7) };
+  }
+  function sharedWithMe() {
+    return C.access.filter((a) => a.viewer === S.me.id).map((a) => ({ id: a.owner, name: (C.members.find((m) => m.id === a.owner) || {}).name || "Unbekannt" }))
+      .sort((a, b) => a.name.localeCompare(b.name, "de"));
+  }
+  async function loadPreviews() {
+    const people = sharedWithMe();
+    const res = await Promise.all(people.map((p) => loadTarget(p.id)));
+    C.previews = {}; people.forEach((p, i) => { C.previews[p.id] = res[i]; });
+  }
+
+  // ---------- Kalender: Automatisch einplanen ----------
+  async function autoPlan() {
+    if (!C.settings.focus.length) { toast("Lege zuerst unter „Einstellungen“ fest, wann du Zeit für To-Dos hast."); C.tab = "einstellungen"; renderAll(); return; }
+    const now = new Date();
+    const open = C.todos.filter((t) => !t.done && (!t.planned_start || new Date(t.planned_start) < now));
+    if (!open.length) { toast("Alle offenen To-Dos sind schon eingeplant."); return; }
+    open.sort((a, b) => a.priority - b.priority || (a.due || "9999").localeCompare(b.due || "9999") || a.created_at.localeCompare(b.created_at));
+    const busy = myBusy().filter((b) => b.e > now);
+    const free = [];
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    for (let i = 0; i < C.settings.weeks * 7; i++) {
+      const d = addDays(start, i);
+      if (C.settings.blocked.includes(isoDate(d))) continue;
+      for (const w of windowsOn(C.settings.focus, d)) {
+        const s = w.s < now ? ceilQuarter(now) : w.s;
+        if (s < w.e) free.push(...subtract({ s, e: w.e }, busy));
+      }
+    }
+    free.sort((a, b) => a.s - b.s);
+    const plan = [];
+    for (const t of open) {
+      const need = t.duration_min * 60000;
+      const due = t.due ? new Date(t.due + "T23:59:00") : null;
+      let idx = free.findIndex((f) => f.e - f.s >= need && (!due || f.s <= due));
+      if (idx < 0) idx = free.findIndex((f) => f.e - f.s >= need);
+      if (idx < 0) continue;
+      const f = free[idx];
+      const s = new Date(f.s), e = new Date(f.s.getTime() + need);
+      plan.push({ t, s });
+      free.splice(idx, 1, ...(f.e - e >= 5 * 60000 ? [{ s: ceilQuarter(e), e: f.e }] : []));
+    }
+    if (!plan.length) { toast("In deiner To-Do-Zeit ist gerade kein passender Platz frei. Verlängere die Zeitfenster oder kürze die Dauer."); return; }
+    const before = plan.map((p) => [p.t.id, p.t.planned_start]);
+    for (const p of plan) {
+      p.t.planned_start = p.s.toISOString();
+      const { error } = await S.sb.from("todos").update({ planned_start: p.t.planned_start }).eq("id", p.t.id);
+      if (error) { toast("Einplanen hat nicht geklappt: " + error.message); break; }
+    }
+    const missing = open.length - plan.length;
+    C.week = mondayOf(plan[0].s);
+    renderAll();
+    toast(`${plan.length} To-Dos eingeplant${missing ? `, ${missing} passten nicht mehr in deine To-Do-Zeit` : ""}.`, async () => {
+      for (const [id, ps] of before) { const t = C.todos.find((x) => x.id === id); if (t) t.planned_start = ps; await S.sb.from("todos").update({ planned_start: ps }).eq("id", id); }
+      renderAll();
+    });
+  }
+
+  // ---------- Kalender: iPhone-Kalender ----------
+  function calIcsDownload(events, filename) {
+    const pad = (n) => String(n).padStart(2, "0");
+    const f = (x) => `${x.getFullYear()}${pad(x.getMonth() + 1)}${pad(x.getDate())}T${pad(x.getHours())}${pad(x.getMinutes())}00`;
+    const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
+    const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Kontakt-Dashboard//DE", "CALSCALE:GREGORIAN"];
+    for (const ev of events) {
+      lines.push("BEGIN:VEVENT", `UID:${ev.uid}@kontakt-dashboard`, `DTSTAMP:${stamp}`, `DTSTART:${f(ev.s)}`, `DTEND:${f(ev.e)}`, `SUMMARY:${icsText(ev.title)}`);
+      if (ev.desc) lines.push(`DESCRIPTION:${icsText(ev.desc)}`);
+      lines.push("BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:Erinnerung", "TRIGGER:-PT15M", "END:VALARM", "END:VEVENT");
+    }
+    lines.push("END:VCALENDAR");
+    const a = document.createElement("a");
+    a.href = "data:text/calendar;charset=utf-8," + encodeURIComponent(lines.map(icsFold).join("\r\n") + "\r\n");
+    a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+  function bookingEvent(b) {
+    const mineAsOwner = b.owner === S.me.id;
+    return { uid: b.id, s: new Date(b.start_at), e: new Date(b.end_at), title: `${b.title} – ${mineAsOwner ? b.booker_name : b.owner_name}`, desc: b.note };
+  }
+  function todoEvent(t) { const s = new Date(t.planned_start); return { uid: t.id, s, e: new Date(s.getTime() + t.duration_min * 60000), title: "To-Do: " + t.title, desc: "" }; }
+
+  // ---------- Kalender: Darstellung ----------
+  function renderCal() {
+    const v = $("calView");
+    const tabs = [["woche", "Meine Woche"], ["todos", "To-Dos"], ["buchen", "Zeit buchen"], ["einstellungen", "Einstellungen"]];
+    const head = `<div class="cal-tabs" role="tablist">${tabs.map(([k, l]) => `<button type="button" role="tab" data-ctab="${k}" aria-selected="${C.tab === k}">${l}</button>`).join("")}</div>`;
+    if (!C.loaded) { v.innerHTML = head + `<div class="empty"><h2>Kalender wird geladen …</h2></div>`; return; }
+    let body = "";
+    if (C.tab === "woche") body = calWeek();
+    else if (C.tab === "todos") body = calTodos();
+    else if (C.tab === "buchen") body = calBook();
+    else body = calSettingsView();
+    v.innerHTML = head + body;
+  }
+  function calWeek() {
+    const ws = C.week, we = addDays(ws, 7), now = new Date();
+    const busy = myBusy();
+    const allSlots = freeSlots(C.settings, busy, 7 * 12);
+    const openTodos = C.todos.filter((t) => !t.done);
+    const unplanned = openTodos.filter((t) => !t.planned_start || new Date(t.planned_start) < now);
+    const weekBookings = C.bookings.filter((b) => new Date(b.start_at) >= ws && new Date(b.start_at) < we);
+    const weekTodos = C.todos.filter((t) => t.planned_start && new Date(t.planned_start) >= ws && new Date(t.planned_start) < we);
+    const weekSlots = allSlots.filter((s) => s.s >= ws && s.s < we);
+    let focusFree = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = addDays(ws, i);
+      if (C.settings.blocked.includes(isoDate(d))) continue;
+      for (const w of windowsOn(C.settings.focus, d)) for (const p of subtract({ s: w.s < now ? now : w.s, e: w.e }, busy)) if (p.e > p.s) focusFree += (p.e - p.s) / 60000;
+    }
+    const dueSteps = C.nextSteps.filter((n) => n.next_date <= isoDate(addDays(ws, 6))).length;
+    const tips = [];
+    if (!C.settings.avail.length && !C.settings.focus.length) tips.push(`Leg unter <button class="linkbtn" type="button" data-ctab="einstellungen">Einstellungen</button> einmal deine Wochenvorlage fest. Sie gilt dann automatisch für alle kommenden Wochen.`);
+    if (unplanned.length) tips.push(`${unplanned.length} ${unplanned.length === 1 ? "To-Do ist" : "To-Dos sind"} noch nicht eingeplant. <button class="btn primary" type="button" data-cact="autoplan">Automatisch einplanen</button>`);
+    if (dueSteps) tips.push(`${dueSteps} Next ${dueSteps === 1 ? "Step aus deinen Kontakten ist" : "Steps aus deinen Kontakten sind"} bis Sonntag fällig. <button class="linkbtn" type="button" data-ctab="todos">Als To-Do übernehmen</button>`);
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = addDays(ws, i), dn = addDays(d, 1);
+      const items = [];
+      for (const b of weekBookings.filter((b) => new Date(b.start_at) >= d && new Date(b.start_at) < dn)) {
+        const own = b.owner === S.me.id;
+        items.push({ s: new Date(b.start_at), html: `<div class="ci booking"><span class="ct">${hm(new Date(b.start_at))}–${hm(new Date(b.end_at))}</span><div class="cx"><strong>${esc(b.title)}</strong><span>${own ? "gebucht von " + esc(b.booker_name) : "bei " + esc(b.owner_name)}${b.note ? " · " + esc(b.note) : ""}</span></div><div class="ca"><button type="button" class="open-btn" data-bics="${b.id}">Kalender</button><button type="button" class="open-btn" data-bdel="${b.id}">Absagen</button></div></div>` });
+      }
+      for (const t of weekTodos.filter((t) => new Date(t.planned_start) >= d && new Date(t.planned_start) < dn)) {
+        const s = new Date(t.planned_start), e = new Date(s.getTime() + t.duration_min * 60000);
+        items.push({ s, html: `<div class="ci todo ${t.done ? "done" : ""}"><span class="ct">${hm(s)}–${hm(e)}</span><label class="cx"><span class="row-c"><input type="checkbox" data-tdone="${t.id}" ${t.done ? "checked" : ""}> <strong>${esc(t.title)}</strong></span><span>${prioLabel(t.priority)}${t.due ? " · fällig " + fmtDate(t.due) : ""}</span></label><div class="ca"><button type="button" class="open-btn" data-tunplan="${t.id}">Ausplanen</button></div></div>` });
+      }
+      const blocked = C.settings.blocked.includes(isoDate(d));
+      const ds = weekSlots.filter((s) => s.s >= d && s.s < dn);
+      const focus = blocked ? [] : windowsOn(C.settings.focus, d);
+      items.sort((a, b) => a.s - b.s);
+      const isToday = isoDate(d) === isoDate(now);
+      days.push(`<section class="cday ${isToday ? "today" : ""} ${d < now && !isToday ? "past" : ""}">
+        <h3>${DAYS_LONG[i]} <span>${d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })}</span>${isToday ? ` <span class="pill edit">Heute</span>` : ""}</h3>
+        ${blocked ? `<p class="hint">Freier Tag</p>` : ""}
+        ${items.map((x) => x.html).join("")}
+        ${focus.length ? `<p class="cfoot">To-Do-Zeit ${focus.map((w) => `${hm(w.s)}–${hm(w.e)}`).join(", ")}</p>` : ""}
+        ${ds.length ? `<p class="cfoot free">Buchbar: ${ds.map((s) => hm(s.s)).join(", ")}</p>` : ""}
+        ${!items.length && !focus.length && !ds.length && !blocked ? `<p class="hint">Nichts geplant</p>` : ""}
+      </section>`);
+    }
+    const label = `${ws.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })} – ${addDays(ws, 6).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })}`;
+    const exportable = weekBookings.length + weekTodos.filter((t) => !t.done).length;
+    return `<div class="cal-bar"><div class="weeknav"><button class="btn" type="button" data-cweek="-1" aria-label="Vorige Woche">‹</button><strong>${label}</strong><button class="btn" type="button" data-cweek="1" aria-label="Nächste Woche">›</button>${isoDate(ws) !== isoDate(mondayOf(now)) ? `<button class="btn ghost" type="button" data-cweek="0">Heute</button>` : ""}</div>
+      <span class="spacer"></span><button class="btn" type="button" data-cact="weekics" ${exportable ? "" : "disabled"}>Woche in iPhone-Kalender</button><button class="btn primary" type="button" data-cact="autoplan">Automatisch einplanen</button></div>
+      <div class="cal-sum"><span><strong>${weekSlots.length}</strong> buchbare Termine frei</span><span><strong>${(Math.round(focusFree / 6) / 10).toLocaleString("de-DE")} Std.</strong> To-Do-Zeit frei</span><span><strong>${weekBookings.length}</strong> ${weekBookings.length === 1 ? "Termin" : "Termine"}</span><span><strong>${weekTodos.filter((t) => !t.done).length}</strong> To-Dos eingeplant</span></div>
+      ${tips.length ? `<div class="tips">${tips.map((t) => `<p>${t}</p>`).join("")}</div>` : ""}
+      <div class="cweek">${days.join("")}</div>`;
+  }
+  function prioLabel(p) { return p === 1 ? "Hohe Priorität" : p === 3 ? "Niedrige Priorität" : "Normale Priorität"; }
+  function fmtDate(iso) { return new Date(iso + "T12:00:00").toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }); }
+  function calTodos() {
+    const open = C.todos.filter((t) => !t.done).sort((a, b) => a.priority - b.priority || (a.due || "9999").localeCompare(b.due || "9999"));
+    const done = C.todos.filter((t) => t.done);
+    const linked = new Set(C.todos.map((t) => t.contact_id).filter(Boolean));
+    const sugg = C.nextSteps.filter((n) => !linked.has(n.id)).sort((a, b) => a.next_date.localeCompare(b.next_date));
+    const row = (t) => {
+      const ps = t.planned_start ? new Date(t.planned_start) : null;
+      const late = t.due && !t.done && t.due < isoDate(new Date());
+      return `<div class="trow ${t.done ? "done" : ""}"><input type="checkbox" data-tdone="${t.id}" ${t.done ? "checked" : ""} aria-label="Erledigt">
+        <input type="text" class="ttitle" data-ttitle="${t.id}" value="${esc(t.title)}" aria-label="To-Do">
+        <span class="pill ${t.priority === 1 ? "warn" : ""}">${t.priority === 1 ? "Hoch" : t.priority === 3 ? "Niedrig" : "Normal"}</span>
+        <span class="pill">${t.duration_min} Min.</span>
+        ${t.due ? `<span class="pill ${late ? "warn" : ""}">fällig ${fmtDate(t.due)}</span>` : ""}
+        <span class="pill ${ps && ps > new Date() ? "edit" : ""}">${ps && !t.done ? (ps > new Date() ? `${dayLabel(ps)} ${hm(ps)}` : "Zeit verpasst") : t.done ? "erledigt" : "nicht eingeplant"}</span>
+        <button type="button" class="open-btn" data-tdel="${t.id}" aria-label="Löschen">Löschen</button></div>`;
+    };
+    return `<form id="todoAdd" class="todo-add">
+        <input id="tdTitle" type="text" placeholder="Neues To-Do, z. B. Max wegen Analyse anrufen" required aria-label="Neues To-Do">
+        <select id="tdDur" aria-label="Dauer"><option value="15">15 Min.</option><option value="30" selected>30 Min.</option><option value="45">45 Min.</option><option value="60">1 Std.</option><option value="90">1,5 Std.</option><option value="120">2 Std.</option></select>
+        <select id="tdPrio" aria-label="Priorität"><option value="1">Hoch</option><option value="2" selected>Normal</option><option value="3">Niedrig</option></select>
+        <input id="tdDue" type="date" aria-label="Fällig am">
+        <button class="btn primary" type="submit">Hinzufügen</button>
+      </form>
+      <div class="cal-bar"><h3 class="section-title">Offen (${open.length})</h3><span class="spacer"></span><button class="btn primary" type="button" data-cact="autoplan">Automatisch einplanen</button></div>
+      <p class="hint">„Automatisch einplanen“ verteilt alle offenen To-Dos nach Priorität und Fälligkeit auf deine To-Do-Zeit der nächsten Wochen. Termine und schon geplante To-Dos bleiben frei.</p>
+      <div class="tlist">${open.map(row).join("") || `<p class="hint">Keine offenen To-Dos.</p>`}</div>
+      ${sugg.length ? `<h3 class="section-title">Vorschläge aus deinen Kontakten</h3><p class="hint">Next Steps, die in den nächsten 14 Tagen fällig sind oder überfällig.</p>
+        <div class="tlist">${sugg.map((n) => `<div class="trow"><span class="ttitle-s"><strong>${esc(n.next_step || "Next Step")}</strong> – ${esc(n.name)}</span><span class="pill ${n.next_date < isoDate(new Date()) ? "warn" : ""}">fällig ${fmtDate(n.next_date)}</span><button type="button" class="btn" data-nsadd="${n.id}">Als To-Do übernehmen</button></div>`).join("")}</div>` : ""}
+      ${done.length ? `<div class="cal-bar"><button class="linkbtn" type="button" data-cact="toggledone">${C.showDone ? "Erledigte ausblenden" : `Erledigte anzeigen (${done.length})`}</button><span class="spacer"></span>${C.showDone ? `<button class="btn ghost" type="button" data-cact="cleardone">Erledigte löschen</button>` : ""}</div>${C.showDone ? `<div class="tlist">${done.map(row).join("")}</div>` : ""}` : ""}`;
+  }
+  function calBook() {
+    const people = sharedWithMe();
+    const mine = C.bookings.filter((b) => b.booker === S.me.id && b.owner !== S.me.id && new Date(b.end_at) > new Date());
+    let detail = "";
+    if (C.target) {
+      const p = people.find((x) => x.id === C.target);
+      const data = C.previews[C.target];
+      if (p && data) {
+        const byDay = {};
+        for (const s of data.slots) (byDay[isoDate(s.s)] = byDay[isoDate(s.s)] || []).push(s);
+        const keys = Object.keys(byDay).sort();
+        detail = `<div class="book-detail"><div class="cal-bar"><h3 class="section-title">${esc(p.name)} hat Zeit</h3><span class="spacer"></span><button class="btn ghost" type="button" data-btarget="">Schließen</button></div>
+          ${keys.length ? keys.map((k) => `<div class="bday"><strong>${dayLabel(new Date(k + "T12:00:00"))}</strong><div class="slots">${byDay[k].map((s) => `<button type="button" class="slot ${C.pick && C.pick.s.getTime() === s.s.getTime() ? "on" : ""}" data-slot="${s.s.getTime()}|${s.e.getTime()}">${hm(s.s)}</button>`).join("")}</div></div>`).join("")
+            : `<p class="hint">${esc(p.name)} hat in den nächsten ${data.settings.weeks} Wochen keine freien Zeiten eingetragen.</p>`}
+          ${C.pick ? `<form id="bookForm" class="book-form"><p><strong>${DAYS_LONG[weekday(C.pick.s) - 1]}, ${C.pick.s.toLocaleDateString("de-DE")} · ${hm(C.pick.s)}–${hm(C.pick.e)}</strong> bei ${esc(p.name)}</p>
+            <label class="field"><span>Worum geht es?</span><input id="bkTitle" type="text" value="Termin" required></label>
+            <label class="field"><span>Notiz (optional)</span><input id="bkNote" type="text" placeholder="z. B. Kundentermin vorbereiten"></label>
+            <div><button class="btn primary" type="submit">Verbindlich buchen</button></div></form>` : ""}
+        </div>`;
+      }
+    }
+    return `<p class="hint">Hier siehst du, wann Personen Zeit haben, die ihren Kalender für dich freigegeben haben. Tippe auf eine Uhrzeit, um sie zu buchen. Deinen eigenen Kalender gibst du unter „Einstellungen“ frei.</p>
+      ${people.length ? `<div class="team-grid">${people.map((p) => {
+        const d = C.previews[p.id]; const next = d && d.slots[0];
+        return `<button type="button" class="team-card ${C.target === p.id ? "sel" : ""}" data-btarget="${p.id}"><h3>${esc(p.name)} hat Zeit</h3><span>${!d ? "wird geladen …" : next ? `Nächster freier Termin: ${dayLabel(next.s)}, ${hm(next.s)} Uhr · ${d.slots.length} frei` : "Gerade keine freien Zeiten"}</span></button>`;
+      }).join("")}</div>` : `<div class="empty"><h2>Noch niemand hat seinen Kalender für dich freigegeben</h2><p>Sobald jemand dich unter „Einstellungen → Wer darf buchen“ auswählt, erscheint die Person hier.</p></div>`}
+      ${detail}
+      ${mine.length ? `<h3 class="section-title">Deine Buchungen bei anderen</h3><div class="tlist">${mine.map((b) => `<div class="trow"><span class="ttitle-s"><strong>${esc(b.title)}</strong> bei ${esc(b.owner_name)}</span><span class="pill edit">${dayLabel(new Date(b.start_at))} ${hm(new Date(b.start_at))}</span><button type="button" class="open-btn" data-bics="${b.id}">Kalender</button><button type="button" class="open-btn" data-bdel="${b.id}">Absagen</button></div>`).join("")}</div>` : ""}`;
+  }
+  function winEditor(kind) {
+    const list = C.settings[kind];
+    return `<div class="presets">${PRESETS.map((p, i) => {
+        const on = p.win.every((w) => list.some((x) => x.day === w.day && x.start === w.start && x.end === w.end));
+        return `<button type="button" class="chip-toggle" aria-pressed="${on}" data-preset="${kind}|${i}">${p.label}</button>`;
+      }).join("")}</div>
+      <div class="wins">${list.map((w, i) => `<div class="win"><select data-wday="${kind}|${i}" aria-label="Wochentag">${DAYS_LONG.map((d, j) => `<option value="${j + 1}" ${w.day === j + 1 ? "selected" : ""}>${d}</option>`).join("")}</select>
+        <input type="time" data-wstart="${kind}|${i}" value="${w.start}" aria-label="Von"><span>–</span><input type="time" data-wend="${kind}|${i}" value="${w.end}" aria-label="Bis">
+        <button type="button" class="x" data-wdel="${kind}|${i}" aria-label="Zeitfenster entfernen" title="Entfernen">×</button></div>`).join("") || `<p class="hint">Noch keine Zeiten. Tippe oben auf einen Vorschlag oder füge ein Zeitfenster hinzu.</p>`}</div>
+      <button type="button" class="btn" data-wadd="${kind}">+ Zeitfenster</button>`;
+  }
+  function calSettingsView() {
+    const s = C.settings;
+    const others = C.members.filter((m) => m.id !== S.me.id);
+    const shared = new Set(C.access.filter((a) => a.owner === S.me.id).map((a) => a.viewer));
+    return `<p class="hint">Du legst deine Woche einmal fest. Sie wiederholt sich automatisch jede Woche, du musst nichts neu eintragen. Ausnahmen trägst du unten als freie Tage ein.</p>
+      <div class="set-grid">
+        <section class="set-card"><h3 class="section-title">Wann können andere dich buchen?</h3><p class="hint">Daraus entsteht „${esc(displayName(S.me))} hat Zeit“ für alle, die du unten freigibst.</p>${winEditor("avail")}</section>
+        <section class="set-card"><h3 class="section-title">Wann erledigst du deine To-Dos?</h3><p class="hint">In diese Zeit plant „Automatisch einplanen“ deine To-Dos ein.</p>${winEditor("focus")}</section>
+        <section class="set-card"><h3 class="section-title">Termine</h3>
+          <div class="grid2"><label class="field"><span>Länge eines Termins</span><select id="setSlot">${[30, 45, 60, 90, 120].map((m) => `<option value="${m}" ${s.slot_min === m ? "selected" : ""}>${m < 60 ? m + " Minuten" : String(m / 60).replace(".", ",") + (m === 60 ? " Stunde" : " Stunden")}</option>`).join("")}</select></label>
+          <label class="field"><span>Buchbar im Voraus</span><select id="setWeeks">${[1, 2, 4, 6, 8, 12].map((w) => `<option value="${w}" ${s.weeks === w ? "selected" : ""}>${w} ${w === 1 ? "Woche" : "Wochen"}</option>`).join("")}</select></label></div>
+          <h3 class="section-title">Freie Tage</h3><p class="hint">An diesen Tagen bist du nicht buchbar und es werden keine To-Dos eingeplant, zum Beispiel Urlaub.</p>
+          <div class="share-row"><input type="date" id="blkDate" aria-label="Freier Tag"><button type="button" class="btn" data-cact="addblock">Hinzufügen</button></div>
+          <div class="share-row">${s.blocked.filter((d) => d >= isoDate(new Date())).sort().map((d) => `<span class="share-chip">${new Date(d + "T12:00:00").toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" })}<button type="button" data-blkdel="${d}" aria-label="Entfernen">×</button></span>`).join("") || `<span class="hint">Keine</span>`}</div>
+        </section>
+        <section class="set-card"><h3 class="section-title">Wer darf sehen, wann du Zeit hast, und dich buchen?</h3><p class="hint">Diese Personen sehen nur, wann du frei bist, nicht was du vorhast.</p>
+          <div class="share-list">${others.map((m) => `<label class="share-item"><input type="checkbox" data-calshare="${m.id}" ${shared.has(m.id) ? "checked" : ""}> ${esc(m.name)}</label>`).join("") || `<p class="hint">Es gibt noch keine weiteren freigeschalteten Mitglieder.</p>`}</div>
+        </section>
+      </div>`;
+  }
+
+  // ---------- Kalender: Ereignisse ----------
+  const calV = $("calView");
+  calV.addEventListener("click", async (e) => {
+    const t = e.target.closest("button"); if (!t) return;
+    const d = t.dataset;
+    if (d.ctab) { C.tab = d.ctab; C.pick = null; renderAll(); if (d.ctab === "buchen") { await loadPreviews(); renderAll(); } return; }
+    if (d.cweek !== undefined) { C.week = d.cweek === "0" ? mondayOf(new Date()) : addDays(C.week, 7 * Number(d.cweek)); renderAll(); return; }
+    if (d.cact === "autoplan") return autoPlan();
+    if (d.cact === "weekics") {
+      const ws = C.week, we = addDays(ws, 7);
+      const ev = C.bookings.filter((b) => new Date(b.start_at) >= ws && new Date(b.start_at) < we).map(bookingEvent)
+        .concat(C.todos.filter((x) => !x.done && x.planned_start && new Date(x.planned_start) >= ws && new Date(x.planned_start) < we).map(todoEvent));
+      return calIcsDownload(ev, `Woche-${isoDate(ws)}.ics`);
+    }
+    if (d.cact === "toggledone") { C.showDone = !C.showDone; renderAll(); return; }
+    if (d.cact === "cleardone") {
+      const ids = C.todos.filter((x) => x.done).map((x) => x.id);
+      const { error } = await S.sb.from("todos").delete().in("id", ids);
+      if (error) return toast(error.message);
+      C.todos = C.todos.filter((x) => !x.done); renderAll(); return toast(`${ids.length} erledigte To-Dos gelöscht.`);
+    }
+    if (d.cact === "addblock") {
+      const v = $("blkDate").value; if (!v) return toast("Wähle zuerst ein Datum.");
+      if (!C.settings.blocked.includes(v)) C.settings.blocked = [...C.settings.blocked, v];
+      await saveCalSettings(); renderAll(); return;
+    }
+    if (d.blkdel) { C.settings.blocked = C.settings.blocked.filter((x) => x !== d.blkdel); await saveCalSettings(); renderAll(); return; }
+    if (d.bics) { const b = C.bookings.find((x) => x.id === d.bics); if (b) calIcsDownload([bookingEvent(b)], `Termin-${isoDate(new Date(b.start_at))}.ics`); return; }
+    if (d.bdel) {
+      if (t.dataset.armed !== "1") { t.dataset.armed = "1"; t.textContent = "Wirklich absagen?"; t.classList.add("armed"); return; }
+      const { error } = await S.sb.from("bookings").delete().eq("id", d.bdel);
+      if (error) return toast(error.message);
+      C.bookings = C.bookings.filter((x) => x.id !== d.bdel); renderAll(); return toast("Termin abgesagt.");
+    }
+    if (d.tunplan) { const x = C.todos.find((y) => y.id === d.tunplan); if (!x) return; x.planned_start = null; renderAll(); await S.sb.from("todos").update({ planned_start: null }).eq("id", x.id); return; }
+    if (d.tdel) { const x = C.todos.find((y) => y.id === d.tdel); C.todos = C.todos.filter((y) => y.id !== d.tdel); renderAll(); await S.sb.from("todos").delete().eq("id", d.tdel); return toast(`„${x ? x.title : "To-Do"}“ gelöscht.`); }
+    if (d.nsadd) {
+      const n = C.nextSteps.find((x) => x.id === d.nsadd); if (!n) return;
+      const { data, error } = await S.sb.from("todos").insert({ owner: S.me.id, title: `${n.next_step || "Next Step"} – ${n.name}`, due: n.next_date, contact_id: n.id, priority: n.next_date <= isoDate(new Date()) ? 1 : 2 }).select().single();
+      if (error) return toast(error.message);
+      C.todos.push(data); renderAll(); return toast("Als To-Do übernommen.");
+    }
+    if (d.btarget !== undefined) {
+      C.target = d.btarget || null; C.pick = null;
+      if (C.target) { renderAll(); C.previews[C.target] = await loadTarget(C.target); }
+      renderAll(); if (C.target) document.querySelector(".book-detail")?.scrollIntoView({ behavior: "smooth", block: "start" }); return;
+    }
+    if (d.slot) { const [s, en] = d.slot.split("|").map(Number); C.pick = { s: new Date(s), e: new Date(en) }; renderAll(); document.getElementById("bkTitle")?.focus(); return; }
+    if (d.preset) {
+      const [kind, i] = d.preset.split("|"); const p = PRESETS[Number(i)];
+      const has = (w) => C.settings[kind].some((x) => x.day === w.day && x.start === w.start && x.end === w.end);
+      const on = p.win.every(has);
+      C.settings[kind] = on ? C.settings[kind].filter((x) => !p.win.some((w) => w.day === x.day && w.start === x.start && w.end === x.end)) : C.settings[kind].concat(p.win.filter((w) => !has(w)));
+      C.settings[kind].sort((a, b) => a.day - b.day || a.start.localeCompare(b.start));
+      await saveCalSettings(); renderAll(); return;
+    }
+    if (d.wadd) { C.settings[d.wadd] = [...C.settings[d.wadd], { day: 1, start: "09:00", end: "12:00" }]; await saveCalSettings(); renderAll(); return; }
+    if (d.wdel) { const [kind, i] = d.wdel.split("|"); C.settings[kind] = C.settings[kind].filter((_, j) => j !== Number(i)); await saveCalSettings(); renderAll(); return; }
+  });
+  calV.addEventListener("change", async (e) => {
+    const t = e.target, d = t.dataset;
+    if (d.tdone) {
+      const x = C.todos.find((y) => y.id === d.tdone); if (!x) return;
+      x.done = t.checked; renderAll();
+      const { error } = await S.sb.from("todos").update({ done: x.done }).eq("id", x.id);
+      if (error) toast(error.message); else if (x.done) toast(`„${x.title}“ erledigt.`);
+      return;
+    }
+    if (d.ttitle) { const x = C.todos.find((y) => y.id === d.ttitle); if (!x) return; x.title = t.value.trim(); await S.sb.from("todos").update({ title: x.title }).eq("id", x.id); return; }
+    if (d.wday || d.wstart || d.wend) {
+      const [kind, i] = (d.wday || d.wstart || d.wend).split("|"); const w = { ...C.settings[kind][Number(i)] };
+      if (d.wday) w.day = Number(t.value); if (d.wstart) w.start = t.value; if (d.wend) w.end = t.value;
+      if (w.start >= w.end) { toast("Das Ende muss nach dem Anfang liegen."); renderAll(); return; }
+      C.settings[kind] = C.settings[kind].map((x, j) => (j === Number(i) ? w : x));
+      await saveCalSettings(); renderAll(); return;
+    }
+    if (t.id === "setSlot") { C.settings.slot_min = Number(t.value); await saveCalSettings(); return; }
+    if (t.id === "setWeeks") { C.settings.weeks = Number(t.value); await saveCalSettings(); return; }
+    if (d.calshare) {
+      const q = t.checked ? S.sb.from("cal_access").insert({ owner: S.me.id, viewer: d.calshare }) : S.sb.from("cal_access").delete().eq("owner", S.me.id).eq("viewer", d.calshare);
+      const { error } = await q;
+      if (error) { toast(error.message); t.checked = !t.checked; return; }
+      const { data } = await S.sb.from("cal_access").select("*"); C.access = data || C.access;
+      const name = (C.members.find((m) => m.id === d.calshare) || {}).name;
+      toast(t.checked ? `${name} sieht jetzt, wann du Zeit hast.` : `${name} sieht deinen Kalender nicht mehr.`);
+    }
+  });
+  calV.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (e.target.id === "todoAdd") {
+      const title = $("tdTitle").value.trim(); if (!title) return;
+      const row = { owner: S.me.id, title, duration_min: Number($("tdDur").value), priority: Number($("tdPrio").value), due: $("tdDue").value || null };
+      const { data, error } = await S.sb.from("todos").insert(row).select().single();
+      if (error) return toast(error.message);
+      C.todos.push(data); renderAll(); $("tdTitle").focus(); return;
+    }
+    if (e.target.id === "bookForm" && C.pick && C.target) {
+      const btn = e.target.querySelector("button[type=submit]"); btn.disabled = true;
+      const { data, error } = await S.sb.from("bookings").insert({ owner: C.target, title: $("bkTitle").value.trim() || "Termin", note: $("bkNote").value.trim(), start_at: C.pick.s.toISOString(), end_at: C.pick.e.toISOString() }).select().single();
+      if (error) { btn.disabled = false; toast(error.message.includes("vergeben") ? "Diese Zeit wurde gerade schon gebucht. Bitte wähle eine andere." : error.message); C.previews[C.target] = await loadTarget(C.target); C.pick = null; renderAll(); return; }
+      C.bookings.push(data); C.pick = null;
+      C.previews[C.target] = await loadTarget(C.target);
+      renderAll();
+      toast(`Gebucht: ${dayLabel(new Date(data.start_at))}, ${hm(new Date(data.start_at))} Uhr bei ${data.owner_name}.`, () => calIcsDownload([bookingEvent(data)], `Termin-${isoDate(new Date(data.start_at))}.ics`));
+      const u = $("undoBtn"); if (u) u.textContent = "In Kalender";
+    }
+  });
+
+  // ---------- Hinweise ----------
+  let toastTimer;
+  function toast(msg, undo) {
+    const host = $("toastHost");
+    host.innerHTML = `<div class="toast" role="status"><span>${esc(msg)}</span>${undo ? `<button type="button" id="undoBtn">Rückgängig</button>` : ""}</div>`;
+    if (undo) $("undoBtn").onclick = () => { host.innerHTML = ""; undo(); };
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { host.innerHTML = ""; }, undo ? 6000 : 3500);
+  }
+
+  // ---------- Ereignisse: Navigation ----------
+  document.addEventListener("click", async (e) => {
+    const v = e.target.closest("[data-view]");
+    if (v) {
+      const to = v.dataset.view;
+      try { history.replaceState(null, "", to === "list" ? "#" : to === "admin" ? "#verwaltung" : to === "cal" ? "#kalender" : "#team"); } catch (err) {}
+      if (to === "list") { if (S.owner !== S.me.id) await openOwner(S.me.id, displayName(S.me), true); else { S.view = "list"; renderAll(); } }
+      else if (to === "team") { S.view = "team"; renderAll(); await loadTeam(); renderAll(); }
+      else if (to === "admin") await showAdmin();
+      else if (to === "cal") await openCal();
+      return;
+    }
+    const o = e.target.closest("[data-owner]");
+    if (o) { const t = S.team.find((x) => x.id === o.dataset.owner); if (t) await openOwner(t.id, t.name, t.canEdit); }
+  });
+  $("tabs").addEventListener("click", (e) => {
+    const t = e.target.closest("[data-list]"); if (!t) return;
+    S.list = t.dataset.list; S.selected.clear(); S.dueOnly = false;
+    renderAll();
+  });
+  $("q").addEventListener("input", (e) => { S.q = e.target.value; renderTable(); renderBulk(); });
+  $("soz").addEventListener("change", (e) => { S.soz = e.target.value; renderAll(); });
+  $("sort").addEventListener("change", (e) => { S.sort = e.target.value; try { localStorage.setItem("kd-sort", S.sort); } catch (err) {} renderAll(); });
+  $("dueOnly").addEventListener("click", () => { S.dueOnly = !S.dueOnly; renderAll(); });
+  $("btnAdd").addEventListener("click", () => addContact());
+  $("btnImport").addEventListener("click", () => openPanel("import"));
+  $("btnFields").addEventListener("click", () => openPanel("fields"));
+  $("btnExport").addEventListener("click", exportCsv);
+
+  function addContact() {
+    if (!S.canEdit) return;
+    const id = newId();
+    putContact(id, blank([S.list]));
+    saveContact(id, 0);
+    renderAll();
+    openPanel("contact", id);
+  }
+
+  // ---------- Ereignisse: Tabelle ----------
+  function onCellEdit(e) {
+    const el = e.target, id = el.dataset.id || el.dataset.did, key = el.dataset.f;
+    if (!id || !key || !S.canEdit) return;
+    const c = S.contacts.get(id); if (!c) return;
+    const v = el.type === "checkbox" ? el.checked : el.value;
+    setVal(c, key, v);
+    if (el.type === "text") el.title = v;
+    saveContact(id, el.type === "text" || el.tagName === "TEXTAREA" ? 700 : 0);
+    if (key === "nextDate") { const td = el.closest("td.date-c"); if (td) { td.classList.toggle("due", isDue(c)); const cb = td.querySelector(".cal-btn"); if (cb) cb.hidden = !c.nextDate; } renderTabs(); renderToolbar(); }
+    if (el.dataset.did) {
+      if (key === "name") { const h = document.querySelector(".drawer-head h2"); if (h) h.textContent = v || "Neuer Kontakt"; }
+      const row = document.querySelector(`#tableBox [data-id="${id}"][data-f="${CSS.escape(key)}"]`);
+      if (row) { if (row.type === "checkbox") row.checked = !!v; else row.value = v; }
+    }
+  }
+  $("tableBox").addEventListener("input", onCellEdit);
+  $("tableBox").addEventListener("change", (e) => {
+    if (e.target.dataset.sel) {
+      const id = e.target.dataset.sel;
+      if (e.target.checked) S.selected.add(id); else S.selected.delete(id);
+      e.target.closest("tr").classList.toggle("sel", e.target.checked);
+      renderBulk(); return;
+    }
+    if (e.target.id === "selAll") {
+      for (const c of visibleRows()) { if (e.target.checked) S.selected.add(c._id); else S.selected.delete(c._id); }
+      renderAll(); return;
+    }
+    if (["soziotop", "beruf"].includes(e.target.dataset.f)) renderToolbar();
+  });
+  $("tableBox").addEventListener("click", (e) => {
+    const t = e.target.closest("button"); if (!t) return;
+    if (t.dataset.cal) addToCalendar(t.dataset.cal);
+    else if (t.dataset.toggle) toggleList(t.dataset.toggle, t.dataset.list);
+    else if (t.dataset.open) openPanel("contact", t.dataset.open);
+    else if (t.dataset.act === "add") addContact();
+    else if (t.dataset.act === "import") openPanel("import");
+    else if (t.dataset.act === "reset") { S.q = ""; $("q").value = ""; S.soz = ""; S.dueOnly = false; renderAll(); }
+  });
+  $("bulk").addEventListener("change", (e) => {
+    const target = e.target.value; if (!target) return;
+    const ids = [...S.selected].filter((id) => S.contacts.has(id));
+    const move = e.target.id === "bulkMove";
+    for (const id of ids) {
+      const c = S.contacts.get(id);
+      let lists = c.lists.includes(target) ? [...c.lists] : [...c.lists, target];
+      if (move) lists = lists.filter((l) => l !== S.list);
+      c.lists = lists; saveContact(id, 0);
+    }
+    S.selected.clear();
+    renderAll();
+    toast(`${ids.length} ${ids.length === 1 ? "Kontakt" : "Kontakte"} ${move ? "in die " + listById(target).label + " verschoben" : "zusätzlich in die " + listById(target).label + " aufgenommen"}.`);
+  });
+  $("bulk").addEventListener("click", (e) => { if (e.target.id === "bulkClear") { S.selected.clear(); renderAll(); } });
+
+  // ---------- Ereignisse: Verwaltung ----------
+  const adminV = $("adminView");
+  async function adminDo(promise, ok) {
+    const { error } = await promise;
+    if (error) toast(error.message.includes("Admin") ? error.message : "Das hat nicht geklappt: " + error.message);
+    else if (ok) toast(ok);
+    await loadAdmin(); renderAll();
+  }
+  adminV.addEventListener("click", (e) => {
+    const t = e.target.closest("button"); if (!t) return;
+    if (t.dataset.uactive) {
+      const on = t.dataset.to === "true";
+      adminDo(S.sb.from("profiles").update({ active: on }).eq("id", t.dataset.uactive), on ? "Konto freigeschaltet." : "Konto gesperrt.");
+    }
+    if (t.dataset.grevoke) {
+      const [owner, viewer] = t.dataset.grevoke.split("|");
+      adminDo(S.sb.from("access").delete().eq("owner", owner).eq("viewer", viewer), "Zugriff entfernt.");
+    }
+  });
+  adminV.addEventListener("change", (e) => {
+    const t = e.target;
+    if (t.dataset.urole) adminDo(S.sb.from("profiles").update({ role: t.value }).eq("id", t.dataset.urole), "Rolle geändert.");
+    if (t.dataset.gadd && t.value) adminDo(S.sb.from("access").insert({ owner: t.dataset.gadd, viewer: t.value, can_edit: false }), "Zugriff gegeben (nur lesen).");
+    if (t.dataset.gedit) {
+      const [owner, viewer] = t.dataset.gedit.split("|");
+      adminDo(S.sb.from("access").update({ can_edit: t.value === "1" }).eq("owner", owner).eq("viewer", viewer), "Recht geändert.");
+    }
+    if (t.dataset.uname) adminDo(S.sb.from("profiles").update({ name: t.value.trim() }).eq("id", t.dataset.uname), "Name gespeichert.");
+  });
+
+  // ---------- Ereignisse: Seitenleiste ----------
+  const ov = $("overlay");
+  ov.addEventListener("input", (e) => {
+    if (e.target.dataset.did) return onCellEdit(e);
+    if (e.target.id === "impText") {
+      importText = e.target.value;
+      const p = parseImport(importText);
+      $("impGo").disabled = !p.rows.length;
+      $("impPrev").innerHTML = importPreview(p);
+    }
+    if (e.target.dataset.frename) {
+      const f = S.fields.find((x) => x.id === e.target.dataset.frename);
+      if (f) { f.label = e.target.value; clearTimeout(f._t); f._t = setTimeout(() => { delete f._t; saveSettings(); renderAll(); }, 700); }
+    }
+  });
+  ov.addEventListener("change", async (e) => {
+    if (e.target.id === "fType") $("fOptWrap").hidden = e.target.value !== "auswahl";
+    if (e.target.id === "impFile" && e.target.files[0]) {
+      importText = await e.target.files[0].text();
+      $("impText").value = importText;
+      const p = parseImport(importText);
+      $("impGo").disabled = !p.rows.length;
+      $("impPrev").innerHTML = importPreview(p);
+    }
+    if (e.target.dataset.fscope) {
+      const f = S.fields.find((x) => x.id === e.target.dataset.fscope); if (!f) return;
+      const checked = [...ov.querySelectorAll(`[data-fscope="${f.id}"]`)].filter((x) => x.checked).map((x) => x.value);
+      if (!checked.length) { e.target.checked = true; toast("Ein Feld muss in mindestens einer Liste erscheinen."); return; }
+      f.lists = checked.length === LISTS.length ? null : checked;
+      saveSettings(); renderTable();
+    }
+    if (e.target.dataset.did && (e.target.dataset.f === "soziotop" || e.target.dataset.f === "beruf")) renderToolbar();
+  });
+  ov.addEventListener("submit", (e) => {
+    if (e.target.id !== "fAdd") return;
+    e.preventDefault();
+    const label = $("fLabel").value.trim(); if (!label) return;
+    const type = $("fType").value;
+    const lists = [...ov.querySelectorAll('input[name="fScope"]')].filter((x) => x.checked).map((x) => x.value);
+    if (!lists.length) { toast("Wähle mindestens eine Liste für das Feld."); return; }
+    const f = { id: uid8(), label, type, lists: lists.length === LISTS.length ? null : lists };
+    if (type === "auswahl") f.options = $("fOpts").value.split(",").map((s) => s.trim()).filter(Boolean);
+    S.fields.push(f);
+    saveSettings();
+    renderPanel(true); renderTable();
+    toast(`Feld „${label}“ hinzugefügt.`);
+  });
+  let armed = null;
+  ov.addEventListener("click", (e) => {
+    const t = e.target.closest("[data-act], [data-toggle], [data-del], [data-fdel], [data-cal], #impGo");
+    if (!t) return;
+    if (t.dataset.cal) return addToCalendar(t.dataset.cal);
+    if (t.dataset.act === "close") return closePanel();
+    if (t.id === "impGo") return runImport();
+    if (t.dataset.toggle) {
+      toggleList(t.dataset.toggle, t.dataset.list);
+      const c = S.contacts.get(t.dataset.toggle);
+      if (c) ov.querySelectorAll("[data-toggle]").forEach((b) => b.setAttribute("aria-pressed", String(c.lists.includes(b.dataset.list))));
+      return;
+    }
+    if (t.dataset.del || t.dataset.fdel) {
+      const key = t.dataset.del || t.dataset.fdel;
+      if (armed !== key) {
+        armed = key; t.classList.add("armed"); t.textContent = "Wirklich löschen?";
+        setTimeout(() => { if (armed === key) { armed = null; if (t.isConnected) { t.classList.remove("armed"); t.textContent = t.dataset.del ? "Kontakt löschen" : "Entfernen"; } } }, 4000);
+        return;
+      }
+      armed = null;
+      if (t.dataset.del) {
+        const id = key, c = S.contacts.get(id);
+        const p = pending.get(id); if (p) { clearTimeout(p.timer); p.dirty = false; pending.delete(id); }
+        S.contacts.delete(id); S.selected.delete(id);
+        S.sb.from("contacts").delete().eq("id", id).then(({ error }) => { if (error) reportError(error); });
+        closePanel();
+        toast(`${c && c.name ? c.name : "Kontakt"} gelöscht.`, () => { putContact(id, c); saveContact(id, 0); renderAll(); });
+      } else {
+        const f = S.fields.find((x) => x.id === key);
+        S.fields = S.fields.filter((x) => x.id !== key);
+        saveSettings(); renderPanel(true); renderTable();
+        toast(`Feld „${f ? f.label : ""}“ entfernt. Die Werte bleiben gespeichert.`, () => { S.fields.push(f); saveSettings(); renderAll(); });
+      }
+    }
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && S.panel) closePanel(); });
+
+  // ---------- Start ----------
+  if (!window.supabase || !CFG.supabaseUrl || !CFG.supabaseAnonKey || CFG.supabaseUrl.includes("DEIN-PROJEKT")) { showAuth("setup"); return; }
+  S.sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey);
+  S.sb.auth.onAuthStateChange((event) => {
+    if (event === "PASSWORD_RECOVERY") setTimeout(() => showAuth("recover", "Lege jetzt ein neues Passwort fest."), 0);
+    else if (event === "SIGNED_IN" && !S.me && S.authMode !== "recover") setTimeout(enter, 0);
+  });
+  enter();
+})();
+</script>
+</body>
+</html>
