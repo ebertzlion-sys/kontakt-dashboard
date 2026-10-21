@@ -238,6 +238,35 @@ td input:disabled, td select:disabled { color: var(--fg); opacity: 1; }
 .cday { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .cday.today { border-color: var(--accent); box-shadow: inset 0 3px 0 var(--accent); }
 .cday.past { opacity: .6; }
+.cweek.one { grid-template-columns: minmax(0, 720px); }
+.seg { display: inline-flex; background: var(--surface-2); border-radius: 999px; padding: 3px; gap: 2px; flex-wrap: wrap; }
+.seg button { border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 999px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.mhead, .mgrid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.mhead span { font-size: 12px; color: var(--muted); font-weight: 600; text-align: center; }
+.mcell { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; min-height: 96px; padding: 6px; display: flex; flex-direction: column; gap: 3px; align-items: stretch; text-align: left; font: inherit; color: inherit; cursor: pointer; min-width: 0; overflow: hidden; }
+.mcell.empty { background: transparent; border-color: transparent; cursor: default; }
+.mcell.today { border-color: var(--accent); box-shadow: inset 0 3px 0 var(--accent); }
+.mcell.past { opacity: .6; }
+.mcell:hover:not(.empty) { border-color: var(--accent); }
+.mnum { font-family: var(--font-mono); font-size: 12px; font-weight: 600; }
+.mi { font-size: 11.5px; padding: 1px 5px; border-radius: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mi.booking { background: var(--accent-soft); }
+.mi.todo { background: var(--surface-2); }
+.mi.todo.done { text-decoration: line-through; color: var(--muted); }
+.mi.private { background: var(--surface-2); border-left: 2px solid var(--muted); }
+.mmore { font-size: 11px; color: var(--muted); }
+.mfree { font-size: 11px; color: var(--l-kunden); margin-top: auto; }
+.mdots { display: none; gap: 3px; flex-wrap: wrap; }
+.mdots i { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+.mdots i.booking { background: var(--accent); }
+.mdots i.todo { background: var(--warn); }
+@media (max-width: 640px) {
+  .mcell { min-height: 58px; padding: 4px; }
+  .mcell .mi, .mcell .mmore { display: none; }
+  .mcell .mdots { display: flex; }
+  .mfree { font-size: 10px; }
+}
 .cday h3 { margin: 0; font-family: var(--font-display); font-size: 15px; display: flex; gap: 6px; align-items: center; }
 .cday h3 span { color: var(--muted); font-family: var(--font-mono); font-size: 12px; font-weight: 500; }
 .cday .hint { margin: 0; }
@@ -1107,7 +1136,7 @@ window.KONTAKT_CONFIG = {
     { label: "Samstag 10–14 Uhr", win: [{ day: 6, start: "10:00", end: "14:00" }] },
   ];
   const C = {
-    tab: "woche", week: mondayOf(new Date()), loaded: false,
+    tab: "woche", week: new Date(), range: (() => { try { return localStorage.getItem("calRange") || "week"; } catch (e) { return "week"; } })(), loaded: false,
     settings: { avail: [], focus: [], slot_min: 60, weeks: 4, blocked: [] },
     todos: [], bookings: [], members: [], access: [], nextSteps: [], ext: null, extBusy: [], extSyncing: false,
     target: null, targetSettings: null, targetBusy: [], previews: {}, pick: null, channel: null, showDone: false,
@@ -1272,7 +1301,7 @@ window.KONTAKT_CONFIG = {
       if (error) { toast("Einplanen hat nicht geklappt: " + error.message); break; }
     }
     const missing = open.length - plan.length;
-    C.week = mondayOf(plan[0].s);
+    C.week = plan[0].s;
     renderAll();
     toast(`${plan.length} To-Dos eingeplant${missing ? `, ${missing} passten nicht mehr in deine To-Do-Zeit` : ""}.`, async () => {
       for (const [id, ps] of before) { const t = C.todos.find((x) => x.id === id); if (t) t.planned_start = ps; await S.sb.from("todos").update({ planned_start: ps }).eq("id", id); }
@@ -1311,7 +1340,7 @@ window.KONTAKT_CONFIG = {
   // ---------- Kalender: Darstellung ----------
   function renderCal() {
     const v = $("calView");
-    const tabs = [["woche", "Meine Woche"], ["todos", "To-Dos"], ["buchen", "Zeit buchen"], ["einstellungen", "Einstellungen"]];
+    const tabs = [["woche", "Mein Kalender"], ["todos", "To-Dos"], ["buchen", "Zeit buchen"], ["einstellungen", "Einstellungen"]];
     const head = `<div class="cal-tabs" role="tablist">${tabs.map(([k, l]) => `<button type="button" role="tab" data-ctab="${k}" aria-selected="${C.tab === k}">${l}</button>`).join("")}</div>`;
     if (!C.loaded) { v.innerHTML = head + `<div class="empty"><h2>Kalender wird geladen …</h2></div>`; return; }
     let body = "";
@@ -1321,66 +1350,113 @@ window.KONTAKT_CONFIG = {
     else body = calSettingsView();
     v.innerHTML = head + body;
   }
+  const RANGES = [["day", "Tag"], ["week", "Woche"], ["2weeks", "2 Wochen"], ["month", "Monat"]];
+  function calRange() {
+    const a = new Date(C.week); a.setHours(0, 0, 0, 0);
+    if (C.range === "day") return { s: a, e: addDays(a, 1) };
+    if (C.range === "month") { const s = new Date(a.getFullYear(), a.getMonth(), 1); return { s, e: new Date(a.getFullYear(), a.getMonth() + 1, 1) }; }
+    const s = mondayOf(a); return { s, e: addDays(s, C.range === "2weeks" ? 14 : 7) };
+  }
+  function calShift(dir) {
+    const a = new Date(C.week);
+    if (C.range === "day") return addDays(a, dir);
+    if (C.range === "month") return new Date(a.getFullYear(), a.getMonth() + dir, 1);
+    return addDays(a, dir * (C.range === "2weeks" ? 14 : 7));
+  }
+  function dayItems(d, dn) {
+    const items = [];
+    for (const b of C.bookings.filter((b) => new Date(b.start_at) >= d && new Date(b.start_at) < dn)) {
+      const own = b.owner === S.me.id;
+      items.push({ s: new Date(b.start_at), kind: "booking", short: `${hm(new Date(b.start_at))} ${b.title}`, html: `<div class="ci booking"><span class="ct">${hm(new Date(b.start_at))}–${hm(new Date(b.end_at))}</span><div class="cx"><strong>${esc(b.title)}</strong><span>${own ? "gebucht von " + esc(b.booker_name) : "bei " + esc(b.owner_name)}${b.note ? " · " + esc(b.note) : ""}</span></div><div class="ca"><button type="button" class="open-btn" data-bics="${b.id}">Kalender</button><button type="button" class="open-btn" data-bdel="${b.id}">Absagen</button></div></div>` });
+    }
+    for (const x of C.extBusy) {
+      const s = new Date(x.start_at), e = new Date(x.end_at);
+      if (!(s < dn && e > d)) continue;
+      const whole = s <= d && e >= dn;
+      const time = whole ? "ganztägig" : `${hm(s < d ? d : s)}–${e > dn ? "24:00" : hm(e)}`;
+      items.push({ s: s < d ? d : s, kind: "private", short: `${whole ? "" : hm(s < d ? d : s) + " "}Privat`, html: `<div class="ci private"><span class="ct">${time}</span><div class="cx"><strong>Privat</strong><span>aus deinem iPhone-Kalender</span></div></div>` });
+    }
+    for (const t of C.todos.filter((t) => t.planned_start && new Date(t.planned_start) >= d && new Date(t.planned_start) < dn)) {
+      const s = new Date(t.planned_start), e = new Date(s.getTime() + t.duration_min * 60000);
+      items.push({ s, kind: "todo" + (t.done ? " done" : ""), short: `${hm(s)} ${t.title}`, html: `<div class="ci todo ${t.done ? "done" : ""}"><span class="ct">${hm(s)}–${hm(e)}</span><label class="cx"><span class="row-c"><input type="checkbox" data-tdone="${t.id}" ${t.done ? "checked" : ""}> <strong>${esc(t.title)}</strong></span><span>${prioLabel(t.priority)}${t.due ? " · fällig " + fmtDate(t.due) : ""}</span></label><div class="ca"><button type="button" class="open-btn" data-tunplan="${t.id}">Ausplanen</button></div></div>` });
+    }
+    return items.sort((a, b) => a.s - b.s);
+  }
   function calWeek() {
-    const ws = C.week, we = addDays(ws, 7), now = new Date();
+    const { s: ws, e: we } = calRange(), now = new Date();
+    const nDays = Math.round((we - ws) / 86400000);
     const busy = myBusy();
     const allSlots = freeSlots(C.settings, busy, 7 * 12);
     const openTodos = C.todos.filter((t) => !t.done);
     const unplanned = openTodos.filter((t) => !t.planned_start || new Date(t.planned_start) < now);
-    const weekBookings = C.bookings.filter((b) => new Date(b.start_at) >= ws && new Date(b.start_at) < we);
-    const weekTodos = C.todos.filter((t) => t.planned_start && new Date(t.planned_start) >= ws && new Date(t.planned_start) < we);
-    const weekSlots = allSlots.filter((s) => s.s >= ws && s.s < we);
+    const rBookings = C.bookings.filter((b) => new Date(b.start_at) >= ws && new Date(b.start_at) < we);
+    const rTodos = C.todos.filter((t) => t.planned_start && new Date(t.planned_start) >= ws && new Date(t.planned_start) < we);
+    const rSlots = allSlots.filter((s) => s.s >= ws && s.s < we);
     let focusFree = 0;
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < nDays; i++) {
       const d = addDays(ws, i);
       if (C.settings.blocked.includes(isoDate(d))) continue;
       for (const w of windowsOn(C.settings.focus, d)) for (const p of subtract({ s: w.s < now ? now : w.s, e: w.e }, busy)) if (p.e > p.s) focusFree += (p.e - p.s) / 60000;
     }
-    const dueSteps = C.nextSteps.filter((n) => n.next_date <= isoDate(addDays(ws, 6))).length;
+    const dueSteps = C.nextSteps.filter((n) => n.next_date < isoDate(we)).length;
+    const until = C.range === "day" ? "heute" : "in diesem Zeitraum";
     const tips = [];
     if (!C.settings.avail.length && !C.settings.focus.length) tips.push(`Leg unter <button class="linkbtn" type="button" data-ctab="einstellungen">Einstellungen</button> einmal deine Wochenvorlage fest. Sie gilt dann automatisch für alle kommenden Wochen.`);
     if (unplanned.length) tips.push(`${unplanned.length} ${unplanned.length === 1 ? "To-Do ist" : "To-Dos sind"} noch nicht eingeplant. <button class="btn primary" type="button" data-cact="autoplan">Automatisch einplanen</button>`);
-    if (dueSteps) tips.push(`${dueSteps} Next ${dueSteps === 1 ? "Step aus deinen Kontakten ist" : "Steps aus deinen Kontakten sind"} bis Sonntag fällig. <button class="linkbtn" type="button" data-ctab="todos">Als To-Do übernehmen</button>`);
-    const days = [];
-    for (let i = 0; i < 7; i++) {
-      const d = addDays(ws, i), dn = addDays(d, 1);
-      const items = [];
-      for (const b of weekBookings.filter((b) => new Date(b.start_at) >= d && new Date(b.start_at) < dn)) {
-        const own = b.owner === S.me.id;
-        items.push({ s: new Date(b.start_at), html: `<div class="ci booking"><span class="ct">${hm(new Date(b.start_at))}–${hm(new Date(b.end_at))}</span><div class="cx"><strong>${esc(b.title)}</strong><span>${own ? "gebucht von " + esc(b.booker_name) : "bei " + esc(b.owner_name)}${b.note ? " · " + esc(b.note) : ""}</span></div><div class="ca"><button type="button" class="open-btn" data-bics="${b.id}">Kalender</button><button type="button" class="open-btn" data-bdel="${b.id}">Absagen</button></div></div>` });
+    if (dueSteps) tips.push(`${dueSteps} Next ${dueSteps === 1 ? "Step aus deinen Kontakten ist" : "Steps aus deinen Kontakten sind"} ${until} fällig. <button class="linkbtn" type="button" data-ctab="todos">Als To-Do übernehmen</button>`);
+    let grid = "";
+    if (C.range === "month") {
+      const lead = weekday(ws) - 1, cells = [];
+      for (let i = 0; i < lead; i++) cells.push(`<div class="mcell empty" aria-hidden="true"></div>`);
+      for (let i = 0; i < nDays; i++) {
+        const d = addDays(ws, i), dn = addDays(d, 1);
+        const items = dayItems(d, dn);
+        const free = rSlots.filter((s) => s.s >= d && s.s < dn).length;
+        const isToday = isoDate(d) === isoDate(now), blocked = C.settings.blocked.includes(isoDate(d));
+        const shown = items.slice(0, 3);
+        cells.push(`<button type="button" class="mcell ${isToday ? "today" : ""} ${d < now && !isToday ? "past" : ""}" data-cday="${isoDate(d)}" aria-label="${DAYS_LONG[weekday(d) - 1]}, ${d.toLocaleDateString("de-DE")}: ${items.length} Einträge">
+          <span class="mnum">${d.getDate()}</span>
+          ${shown.map((x) => `<span class="mi ${x.kind}">${esc(x.short)}</span>`).join("")}
+          ${items.length > 3 ? `<span class="mmore">+${items.length - 3} weitere</span>` : ""}
+          ${blocked ? `<span class="mmore">Freier Tag</span>` : free ? `<span class="mfree">${free} frei</span>` : ""}
+          <span class="mdots">${items.map((x) => `<i class="${x.kind.split(" ")[0]}"></i>`).join("")}</span>
+        </button>`);
       }
-      for (const x of C.extBusy) {
-        const s = new Date(x.start_at), e = new Date(x.end_at);
-        if (!(s < dn && e > d)) continue;
-        const whole = s <= d && e >= dn;
-        const time = whole ? "ganztägig" : `${hm(s < d ? d : s)}–${e > dn ? "24:00" : hm(e)}`;
-        items.push({ s: s < d ? d : s, html: `<div class="ci private"><span class="ct">${time}</span><div class="cx"><strong>Privat</strong><span>aus deinem iPhone-Kalender</span></div></div>` });
+      grid = `<div class="mhead">${DAYS.map((d) => `<span>${d}</span>`).join("")}</div><div class="mgrid">${cells.join("")}</div>
+        <p class="hint">Tippe auf einen Tag, um ihn in der Tagesansicht zu öffnen.</p>`;
+    } else {
+      const days = [];
+      for (let i = 0; i < nDays; i++) {
+        const d = addDays(ws, i), dn = addDays(d, 1);
+        const items = dayItems(d, dn);
+        const blocked = C.settings.blocked.includes(isoDate(d));
+        const ds = rSlots.filter((s) => s.s >= d && s.s < dn);
+        const focus = blocked ? [] : windowsOn(C.settings.focus, d);
+        const isToday = isoDate(d) === isoDate(now);
+        days.push(`<section class="cday ${isToday ? "today" : ""} ${d < now && !isToday ? "past" : ""}">
+          <h3>${DAYS_LONG[weekday(d) - 1]} <span>${d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })}</span>${isToday ? ` <span class="pill edit">Heute</span>` : ""}</h3>
+          ${blocked ? `<p class="hint">Freier Tag</p>` : ""}
+          ${items.map((x) => x.html).join("")}
+          ${focus.length ? `<p class="cfoot">To-Do-Zeit ${focus.map((w) => `${hm(w.s)}–${hm(w.e)}`).join(", ")}</p>` : ""}
+          ${ds.length ? `<p class="cfoot free">Buchbar: ${ds.map((s) => hm(s.s)).join(", ")}</p>` : ""}
+          ${!items.length && !focus.length && !ds.length && !blocked ? `<p class="hint">Nichts geplant</p>` : ""}
+        </section>`);
       }
-      for (const t of weekTodos.filter((t) => new Date(t.planned_start) >= d && new Date(t.planned_start) < dn)) {
-        const s = new Date(t.planned_start), e = new Date(s.getTime() + t.duration_min * 60000);
-        items.push({ s, html: `<div class="ci todo ${t.done ? "done" : ""}"><span class="ct">${hm(s)}–${hm(e)}</span><label class="cx"><span class="row-c"><input type="checkbox" data-tdone="${t.id}" ${t.done ? "checked" : ""}> <strong>${esc(t.title)}</strong></span><span>${prioLabel(t.priority)}${t.due ? " · fällig " + fmtDate(t.due) : ""}</span></label><div class="ca"><button type="button" class="open-btn" data-tunplan="${t.id}">Ausplanen</button></div></div>` });
-      }
-      const blocked = C.settings.blocked.includes(isoDate(d));
-      const ds = weekSlots.filter((s) => s.s >= d && s.s < dn);
-      const focus = blocked ? [] : windowsOn(C.settings.focus, d);
-      items.sort((a, b) => a.s - b.s);
-      const isToday = isoDate(d) === isoDate(now);
-      days.push(`<section class="cday ${isToday ? "today" : ""} ${d < now && !isToday ? "past" : ""}">
-        <h3>${DAYS_LONG[i]} <span>${d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })}</span>${isToday ? ` <span class="pill edit">Heute</span>` : ""}</h3>
-        ${blocked ? `<p class="hint">Freier Tag</p>` : ""}
-        ${items.map((x) => x.html).join("")}
-        ${focus.length ? `<p class="cfoot">To-Do-Zeit ${focus.map((w) => `${hm(w.s)}–${hm(w.e)}`).join(", ")}</p>` : ""}
-        ${ds.length ? `<p class="cfoot free">Buchbar: ${ds.map((s) => hm(s.s)).join(", ")}</p>` : ""}
-        ${!items.length && !focus.length && !ds.length && !blocked ? `<p class="hint">Nichts geplant</p>` : ""}
-      </section>`);
+      grid = `<div class="cweek ${C.range === "day" ? "one" : ""}">${days.join("")}</div>`;
     }
-    const label = `${ws.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })} – ${addDays(ws, 6).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })}`;
-    const exportable = weekBookings.length + weekTodos.filter((t) => !t.done).length;
-    return `<div class="cal-bar"><div class="weeknav"><button class="btn" type="button" data-cweek="-1" aria-label="Vorige Woche">‹</button><strong>${label}</strong><button class="btn" type="button" data-cweek="1" aria-label="Nächste Woche">›</button>${isoDate(ws) !== isoDate(mondayOf(now)) ? `<button class="btn ghost" type="button" data-cweek="0">Heute</button>` : ""}</div>
-      <span class="spacer"></span><button class="btn" type="button" data-cact="weekics" ${exportable ? "" : "disabled"}>Woche in iPhone-Kalender</button><button class="btn primary" type="button" data-cact="autoplan">Automatisch einplanen</button></div>
-      <div class="cal-sum"><span><strong>${weekSlots.length}</strong> buchbare Termine frei</span><span><strong>${(Math.round(focusFree / 6) / 10).toLocaleString("de-DE")} Std.</strong> To-Do-Zeit frei</span><span><strong>${weekBookings.length}</strong> ${weekBookings.length === 1 ? "Termin" : "Termine"}</span><span><strong>${weekTodos.filter((t) => !t.done).length}</strong> To-Dos eingeplant</span></div>
+    const f = { day: "2-digit", month: "2-digit" };
+    const label = C.range === "day" ? ws.toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })
+      : C.range === "month" ? ws.toLocaleDateString("de-DE", { month: "long", year: "numeric" })
+      : `${ws.toLocaleDateString("de-DE", f)} – ${addDays(we, -1).toLocaleDateString("de-DE", { ...f, year: "numeric" })}`;
+    const unit = { day: ["Vorheriger Tag", "Nächster Tag"], week: ["Vorige Woche", "Nächste Woche"], "2weeks": ["Vorige 2 Wochen", "Nächste 2 Wochen"], month: ["Voriger Monat", "Nächster Monat"] }[C.range];
+    const isNow = now >= ws && now < we;
+    const exportable = rBookings.length + rTodos.filter((t) => !t.done).length;
+    return `<div class="cal-bar"><div class="seg" role="group" aria-label="Ansicht">${RANGES.map(([k, l]) => `<button type="button" data-crange="${k}" aria-pressed="${C.range === k}">${l}</button>`).join("")}</div>
+        <span class="spacer"></span><button class="btn" type="button" data-cact="weekics" ${exportable ? "" : "disabled"}>In iPhone-Kalender</button><button class="btn primary" type="button" data-cact="autoplan">Automatisch einplanen</button></div>
+      <div class="cal-bar"><div class="weeknav"><button class="btn" type="button" data-cweek="-1" aria-label="${unit[0]}">‹</button><strong>${label}</strong><button class="btn" type="button" data-cweek="1" aria-label="${unit[1]}">›</button>${isNow ? "" : `<button class="btn ghost" type="button" data-cweek="0">Heute</button>`}</div></div>
+      <div class="cal-sum"><span><strong>${rSlots.length}</strong> buchbare Termine frei</span><span><strong>${(Math.round(focusFree / 6) / 10).toLocaleString("de-DE")} Std.</strong> To-Do-Zeit frei</span><span><strong>${rBookings.length}</strong> ${rBookings.length === 1 ? "Termin" : "Termine"}</span><span><strong>${rTodos.filter((t) => !t.done).length}</strong> To-Dos eingeplant</span></div>
       ${tips.length ? `<div class="tips">${tips.map((t) => `<p>${t}</p>`).join("")}</div>` : ""}
-      <div class="cweek">${days.join("")}</div>`;
+      ${grid}`;
   }
   function prioLabel(p) { return p === 1 ? "Hohe Priorität" : p === 3 ? "Niedrige Priorität" : "Normale Priorität"; }
   function fmtDate(iso) { return new Date(iso + "T12:00:00").toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }); }
@@ -1518,10 +1594,12 @@ window.KONTAKT_CONFIG = {
     const t = e.target.closest("button"); if (!t) return;
     const d = t.dataset;
     if (d.ctab) { C.tab = d.ctab; C.pick = null; renderAll(); if (d.ctab === "buchen") { await loadPreviews(); renderAll(); } return; }
-    if (d.cweek !== undefined) { C.week = d.cweek === "0" ? mondayOf(new Date()) : addDays(C.week, 7 * Number(d.cweek)); renderAll(); return; }
+    if (d.cweek !== undefined) { C.week = d.cweek === "0" ? new Date() : calShift(Number(d.cweek)); renderAll(); return; }
+    if (d.crange) { C.range = d.crange; try { localStorage.setItem("calRange", C.range); } catch (err) { /* egal */ } renderAll(); return; }
+    if (d.cday) { C.range = "day"; C.week = new Date(d.cday + "T12:00:00"); renderAll(); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
     if (d.cact === "autoplan") return autoPlan();
     if (d.cact === "weekics") {
-      const ws = C.week, we = addDays(ws, 7);
+      const { s: ws, e: we } = calRange();
       const ev = C.bookings.filter((b) => new Date(b.start_at) >= ws && new Date(b.start_at) < we).map(bookingEvent)
         .concat(C.todos.filter((x) => !x.done && x.planned_start && new Date(x.planned_start) >= ws && new Date(x.planned_start) < we).map(todoEvent));
       return calIcsDownload(ev, `Woche-${isoDate(ws)}.ics`);
