@@ -248,6 +248,12 @@ td input:disabled, td select:disabled { color: var(--fg); opacity: 1; }
 .ci .ca { grid-column: 2; display: flex; gap: 6px; flex-wrap: wrap; }
 .ci.booking { background: var(--accent-soft); }
 .ci.todo { background: var(--surface-2); }
+.ci.private { background: var(--surface-2); border-left: 3px solid var(--muted); }
+.ext-status { margin: 0; font-size: 13px; }
+.ext-status.ok { color: var(--l-kunden); }
+.ext-status.err { color: var(--danger); }
+.ext-steps { margin: 0; padding-left: 20px; font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
+.set-card input[type="url"] { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 7px 8px; width: 100%; min-width: 0; color: inherit; font: inherit; }
 .ci.todo.done strong { text-decoration: line-through; color: var(--muted); }
 .row-c { display: flex; gap: 6px; align-items: center; color: var(--fg) !important; font-size: 14px !important; }
 .cfoot { margin: 0; font-size: 12px; color: var(--muted); }
@@ -1103,7 +1109,7 @@ window.KONTAKT_CONFIG = {
   const C = {
     tab: "woche", week: mondayOf(new Date()), loaded: false,
     settings: { avail: [], focus: [], slot_min: 60, weeks: 4, blocked: [] },
-    todos: [], bookings: [], members: [], access: [], nextSteps: [],
+    todos: [], bookings: [], members: [], access: [], nextSteps: [], ext: null, extBusy: [], extSyncing: false,
     target: null, targetSettings: null, targetBusy: [], previews: {}, pick: null, channel: null, showDone: false,
   };
   function mondayOf(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
@@ -1153,7 +1159,8 @@ window.KONTAKT_CONFIG = {
   function myBusy() {
     const b = C.bookings.filter((x) => x.owner === S.me.id).map((x) => ({ s: new Date(x.start_at), e: new Date(x.end_at) }));
     const t = C.todos.filter((x) => !x.done && x.planned_start).map((x) => ({ s: new Date(x.planned_start), e: new Date(new Date(x.planned_start).getTime() + x.duration_min * 60000) }));
-    return b.concat(t);
+    const x = C.extBusy.map((x) => ({ s: new Date(x.start_at), e: new Date(x.end_at) }));
+    return b.concat(t, x);
   }
   function settingsRow(row) {
     return {
@@ -1178,6 +1185,13 @@ window.KONTAKT_CONFIG = {
     if (err) { toast("Kalender konnte nicht geladen werden. Ist kalender.sql in Supabase ausgeführt? (" + err.error.message + ")"); }
     C.settings = settingsRow(st.data);
     C.todos = td.data || []; C.bookings = bk.data || []; C.members = mb.data || []; C.access = ac.data || []; C.nextSteps = ns.data || [];
+    // iPhone-Kalender (fehlt, solange iphone-kalender.sql noch nicht ausgeführt ist)
+    const [ex, eb] = await Promise.all([
+      S.sb.from("ext_cal").select("url, last_sync, last_status, events, pending").eq("owner", me).maybeSingle(),
+      S.sb.from("ext_busy").select("start_at, end_at").eq("owner", me).gte("end_at", addDays(new Date(), -7).toISOString()).order("start_at"),
+    ]);
+    C.ext = ex.error ? null : ex.data || { url: "", last_sync: null, last_status: "", events: 0, pending: null };
+    C.extBusy = eb.error ? [] : eb.data || [];
     C.loaded = true;
     if (!C.channel) {
       let t = null;
@@ -1335,6 +1349,13 @@ window.KONTAKT_CONFIG = {
         const own = b.owner === S.me.id;
         items.push({ s: new Date(b.start_at), html: `<div class="ci booking"><span class="ct">${hm(new Date(b.start_at))}–${hm(new Date(b.end_at))}</span><div class="cx"><strong>${esc(b.title)}</strong><span>${own ? "gebucht von " + esc(b.booker_name) : "bei " + esc(b.owner_name)}${b.note ? " · " + esc(b.note) : ""}</span></div><div class="ca"><button type="button" class="open-btn" data-bics="${b.id}">Kalender</button><button type="button" class="open-btn" data-bdel="${b.id}">Absagen</button></div></div>` });
       }
+      for (const x of C.extBusy) {
+        const s = new Date(x.start_at), e = new Date(x.end_at);
+        if (!(s < dn && e > d)) continue;
+        const whole = s <= d && e >= dn;
+        const time = whole ? "ganztägig" : `${hm(s < d ? d : s)}–${e > dn ? "24:00" : hm(e)}`;
+        items.push({ s: s < d ? d : s, html: `<div class="ci private"><span class="ct">${time}</span><div class="cx"><strong>Privat</strong><span>aus deinem iPhone-Kalender</span></div></div>` });
+      }
       for (const t of weekTodos.filter((t) => new Date(t.planned_start) >= d && new Date(t.planned_start) < dn)) {
         const s = new Date(t.planned_start), e = new Date(s.getTime() + t.duration_min * 60000);
         items.push({ s, html: `<div class="ci todo ${t.done ? "done" : ""}"><span class="ct">${hm(s)}–${hm(e)}</span><label class="cx"><span class="row-c"><input type="checkbox" data-tdone="${t.id}" ${t.done ? "checked" : ""}> <strong>${esc(t.title)}</strong></span><span>${prioLabel(t.priority)}${t.due ? " · fällig " + fmtDate(t.due) : ""}</span></label><div class="ca"><button type="button" class="open-btn" data-tunplan="${t.id}">Ausplanen</button></div></div>` });
@@ -1456,10 +1477,39 @@ window.KONTAKT_CONFIG = {
           <div class="share-row"><input type="date" id="blkDate" aria-label="Freier Tag"><button type="button" class="btn" data-cact="addblock">Hinzufügen</button></div>
           <div class="share-row">${s.blocked.filter((d) => d >= isoDate(new Date())).sort().map((d) => `<span class="share-chip">${new Date(d + "T12:00:00").toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" })}<button type="button" data-blkdel="${d}" aria-label="Entfernen">×</button></span>`).join("") || `<span class="hint">Keine</span>`}</div>
         </section>
+        ${extCard()}
         <section class="set-card"><h3 class="section-title">Wer darf sehen, wann du Zeit hast, und dich buchen?</h3><p class="hint">Diese Personen sehen nur, wann du frei bist, nicht was du vorhast.</p>
           <div class="share-list">${others.map((m) => `<label class="share-item"><input type="checkbox" data-calshare="${m.id}" ${shared.has(m.id) ? "checked" : ""}> ${esc(m.name)}</label>`).join("") || `<p class="hint">Es gibt noch keine weiteren freigeschalteten Mitglieder.</p>`}</div>
         </section>
       </div>`;
+  }
+
+  function extCard() {
+    const x = C.ext;
+    const head = `<section class="set-card"><h3 class="section-title">iPhone-Kalender verbinden</h3>`;
+    if (!x) return head + `<p class="hint">Damit private Termine aus deinem iPhone-Kalender deine buchbaren Zeiten automatisch blockieren, muss einmal <strong>iphone-kalender.sql</strong> in Supabase ausgeführt werden.</p></section>`;
+    let status = "";
+    if (C.extSyncing) status = `<p class="ext-status">Kalender wird abgeglichen …</p>`;
+    else if (x.url && x.last_status === "ok") status = `<p class="ext-status ok">Verbunden. ${x.events} ${x.events === 1 ? "Termin blockiert" : "Termine blockieren"} deine Zeit in den nächsten 13 Wochen. Zuletzt abgeglichen ${new Date(x.last_sync).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })} Uhr.</p>`;
+    else if (x.url && x.last_status) status = `<p class="ext-status err">${esc(x.last_status)}</p>`;
+    else if (x.url) status = `<p class="ext-status">Gespeichert. Der erste Abgleich läuft in den nächsten Minuten.</p>`;
+    return head + `<p class="hint">Termine aus deinem iPhone-Kalender blockieren automatisch deine buchbaren Zeiten und deine To-Do-Zeit. Gespeichert werden nur Beginn und Ende, keine Titel. Andere sehen nur, dass du belegt bist. Der Abgleich läuft alle 10 Minuten.</p>
+      ${x.url ? "" : `<ol class="ext-steps"><li>Öffne auf dem iPhone die App <strong>Kalender</strong> und tippe unten auf <strong>Kalender</strong>.</li><li>Tippe beim Kalender mit deinen privaten Terminen auf das <strong>ⓘ</strong>.</li><li>Schalte <strong>Öffentlicher Kalender</strong> ein und tippe auf <strong>Link teilen → Kopieren</strong>.</li><li>Füge den Link hier ein und tippe auf <strong>Verbinden</strong>.</li></ol>`}
+      <div class="share-row"><input type="url" id="extUrl" placeholder="webcal://p…-caldav.icloud.com/published/…" value="${esc(x.url || "")}" aria-label="Kalender-Link" autocomplete="off"></div>
+      <div class="share-row"><button type="button" class="btn primary" data-cact="extsave">${x.url ? "Link ändern" : "Verbinden"}</button>${x.url ? `<button type="button" class="btn" data-cact="extsync" ${C.extSyncing ? "disabled" : ""}>Jetzt abgleichen</button><button type="button" class="btn ghost" data-cact="extremove">Trennen</button>` : ""}</div>
+      ${status}</section>`;
+  }
+  async function extSync() {
+    C.extSyncing = true; renderAll();
+    let r = await S.sb.rpc("ext_sync_mine", { p_start: true });
+    for (let i = 0; i < 12 && !r.error && (r.data === "requested" || r.data === "waiting"); i++) {
+      await new Promise((ok) => setTimeout(ok, 2500));
+      r = await S.sb.rpc("ext_sync_mine", { p_start: false });
+    }
+    C.extSyncing = false;
+    if (r.error) toast("Abgleich fehlgeschlagen: " + r.error.message);
+    await loadCal(); renderAll();
+    if (!r.error && C.ext && C.ext.last_status === "ok") toast("iPhone-Kalender abgeglichen.");
   }
 
   // ---------- Kalender: Ereignisse ----------
@@ -1476,6 +1526,15 @@ window.KONTAKT_CONFIG = {
         .concat(C.todos.filter((x) => !x.done && x.planned_start && new Date(x.planned_start) >= ws && new Date(x.planned_start) < we).map(todoEvent));
       return calIcsDownload(ev, `Woche-${isoDate(ws)}.ics`);
     }
+    if (d.cact === "extsave" || d.cact === "extremove") {
+      const url = d.cact === "extremove" ? "" : $("extUrl").value.trim();
+      if (d.cact === "extsave" && !url) return toast("Füge zuerst den Link aus deinem iPhone-Kalender ein.");
+      const { error } = await S.sb.rpc("ext_set_url", { p_url: url });
+      if (error) return toast(error.message);
+      if (!url) { await loadCal(); renderAll(); return toast("iPhone-Kalender getrennt. Private Zeiten sind wieder frei."); }
+      return extSync();
+    }
+    if (d.cact === "extsync") return extSync();
     if (d.cact === "toggledone") { C.showDone = !C.showDone; renderAll(); return; }
     if (d.cact === "cleardone") {
       const ids = C.todos.filter((x) => x.done).map((x) => x.id);
