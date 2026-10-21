@@ -283,6 +283,42 @@ td input:disabled, td select:disabled { color: var(--fg); opacity: 1; }
 .win select, .win input, .set-card input[type="date"] { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 5px 8px; }
 .share-list { display: flex; flex-direction: column; gap: 6px; }
 .share-item { display: flex; gap: 8px; align-items: center; }
+
+/* Startseite */
+.hhead { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: space-between; }
+.hhead .hint { margin: 2px 0 0; }
+.hquick { display: flex; flex-wrap: wrap; gap: 8px; }
+.htiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.htile { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+.htile:hover { border-color: var(--accent); }
+.htile strong { font-family: var(--font-display); font-size: 26px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.htile span { color: var(--muted); font-size: 12.5px; }
+.htile.warn { background: var(--warn-soft); border-color: var(--warn); }
+.htile.warn strong { color: var(--warn); }
+.htile.list { box-shadow: inset 3px 0 0 var(--c); }
+.hgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; align-items: start; }
+@media (max-width: 400px) { .hgrid { grid-template-columns: 1fr; } }
+.hcard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.hcard-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+.hcard-h h3 { margin: 0; font-family: var(--font-display); font-size: 16px; }
+.hcard .hint { margin: 0; }
+.hrow { display: flex; gap: 10px; align-items: center; text-align: left; border: 0; background: none; padding: 7px 6px; border-radius: 6px; width: 100%; border-bottom: 1px solid var(--line); }
+.hrow:last-of-type { border-bottom: 0; }
+button.hrow:hover { background: var(--surface-2); }
+.hrow.static.booking .hdate { color: var(--accent); }
+.hdate { font-family: var(--font-mono); font-size: 12px; color: var(--muted); min-width: 74px; white-space: nowrap; }
+.hdate.late { color: var(--danger); font-weight: 600; }
+.hdate.now { color: var(--warn); font-weight: 600; }
+.hmain { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.hmain strong { font-weight: 600; overflow-wrap: anywhere; }
+.hmain span { color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
+.hrow input[type="checkbox"] { width: 17px; height: 17px; flex: none; }
+.hlists { display: flex; gap: 3px; }
+.hlists i { font-style: normal; font-family: var(--font-mono); font-size: 10px; font-weight: 600; border-radius: 999px; padding: 1px 6px; background: var(--c); color: var(--surface); }
+.hwho { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; border-top: 1px solid var(--line); padding-top: 8px; }
+.hwho-i { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 7px 10px; display: flex; flex-direction: column; }
+.hwho-i:hover { border-color: var(--accent); }
+.hwho-i span { color: var(--muted); font-size: 12.5px; }
 </style>
 </head>
 <body>
@@ -303,6 +339,7 @@ td input:disabled, td select:disabled { color: var(--fg); opacity: 1; }
   </div>
 </header>
 
+<main class="wrap" id="homeView" hidden></main>
 <main class="wrap" id="listView">
   <div class="banner" id="ownerBanner" hidden></div>
   <div class="toolbar">
@@ -617,7 +654,8 @@ window.KONTAKT_CONFIG = {
     if (h === "kalender") { await openOwner(me.id, displayName(me), true); await openCal(); }
     else if (h === "team") { await openOwner(me.id, displayName(me), true); S.view = "team"; renderAll(); }
     else if (h === "verwaltung" && me.role === "admin") { await openOwner(me.id, displayName(me), true); await showAdmin(); }
-    else await openOwner(me.id, displayName(me), true);
+    else if (h === "liste") await openOwner(me.id, displayName(me), true);
+    else await openHome();
   }
 
   // ---------- Team und Verwaltung laden ----------
@@ -639,8 +677,9 @@ window.KONTAKT_CONFIG = {
   function renderViews() {
     const isMine = S.owner === S.me.id;
     const b = (v, label) => `<button type="button" data-view="${v}" aria-pressed="${S.view === v && (v !== "list" || isMine)}">${label}</button>`;
-    $("views").innerHTML = b("list", "Meine Liste") + b("cal", "Kalender") + b("team", `Team${S.team.length ? " (" + S.team.length + ")" : ""}`) + (S.me.role === "admin" ? b("admin", "Verwaltung") : "");
+    $("views").innerHTML = b("home", "Start") + b("list", "Meine Liste") + b("cal", "Kalender") + b("team", `Team${S.team.length ? " (" + S.team.length + ")" : ""}`) + (S.me.role === "admin" ? b("admin", "Verwaltung") : "");
     $("listView").hidden = S.view !== "list";
+    $("homeView").hidden = S.view !== "home";
     $("teamView").hidden = S.view !== "team";
     $("adminView").hidden = S.view !== "admin";
     $("calView").hidden = S.view !== "cal";
@@ -650,7 +689,7 @@ window.KONTAKT_CONFIG = {
     $("tabs").innerHTML = LISTS.map((l) => `<button class="tab" role="tab" type="button" data-list="${l.id}" aria-selected="${l.id === S.list}" style="--c: var(--l-${l.id})"><span class="dot"></span>${esc(l.label)}<span class="n">${S.loadedContacts ? inList(l.id).length : "–"}</span></button>`).join("");
     const all = S.contacts.size, due = [...S.contacts.values()].filter(isDue).length;
     const whose = S.owner === S.me.id ? "Deine Liste" : "Liste von " + S.ownerName;
-    $("summary").textContent = S.view === "team" ? "Listen, die mit dir geteilt sind" : S.view === "admin" ? "Konten und Freigaben" : S.view === "cal" ? "To-Dos, Wochenplanung und Termine" : !S.loadedContacts ? "Kontakte werden geladen …" :
+    $("summary").textContent = S.view === "team" ? "Listen, die mit dir geteilt sind" : S.view === "admin" ? "Konten und Freigaben" : S.view === "cal" ? "To-Dos, Wochenplanung und Termine" : S.view === "home" ? "Das Wichtigste auf einen Blick" : !S.loadedContacts ? "Kontakte werden geladen …" :
       `${whose} · ${all} ${all === 1 ? "Kontakt" : "Kontakte"} · ${due} ${due === 1 ? "Next Step fällig" : "Next Steps fällig"}`;
   }
   function renderToolbar() {
@@ -771,6 +810,7 @@ window.KONTAKT_CONFIG = {
     else if (S.view === "team") renderTeam();
     else if (S.view === "admin") renderAdmin();
     else if (S.view === "cal") renderCal();
+    else if (S.view === "home") renderHome();
     if (keep) {
       const el = document.querySelector(`#tableBox [data-id="${keep.id}"][data-f="${CSS.escape(keep.f)}"]`);
       if (el) { el.focus(); try { if (keep.s != null) el.setSelectionRange(keep.s, keep.e); } catch (e) {} }
@@ -1489,6 +1529,92 @@ window.KONTAKT_CONFIG = {
     }
   });
 
+  // ---------- Startseite ----------
+  async function openHome() {
+    if (S.owner !== S.me.id) await openOwner(S.me.id, displayName(S.me), true);
+    S.view = "home"; renderAll();
+    await loadCal(); renderAll();
+    await loadPreviews(); if (S.view === "home") renderAll();
+  }
+  function renderHome() {
+    const v = $("homeView");
+    const now = new Date(), today = isoDate(now), in7 = isoDate(addDays(now, 7));
+    const hour = now.getHours();
+    const greet = hour < 11 ? "Guten Morgen" : hour < 18 ? "Hallo" : "Guten Abend";
+    const contacts = [...S.contacts.values()];
+    const overdue = contacts.filter((c) => c.nextDate && c.nextDate < today);
+    const dueToday = contacts.filter((c) => c.nextDate === today);
+    const upcoming = contacts.filter((c) => c.nextDate && c.nextDate > today && c.nextDate <= in7);
+    const steps = [...overdue, ...dueToday, ...upcoming].sort((a, b) => a.nextDate.localeCompare(b.nextDate)).slice(0, 8);
+    const tomorrow = addDays(new Date(today + "T00:00:00"), 1);
+    const todayStart = new Date(today + "T00:00:00");
+    const todayItems = [];
+    if (C.loaded) {
+      for (const b of C.bookings) { const s = new Date(b.start_at); if (s >= todayStart && s < tomorrow) todayItems.push({ s, e: new Date(b.end_at), kind: "booking", title: b.title, sub: b.owner === S.me.id ? "mit " + b.booker_name : "bei " + b.owner_name }); }
+      for (const t of C.todos) { if (!t.planned_start || t.done) continue; const s = new Date(t.planned_start); if (s >= todayStart && s < tomorrow) todayItems.push({ s, e: new Date(s.getTime() + t.duration_min * 60000), kind: "todo", title: t.title, sub: "To-Do", id: t.id }); }
+      todayItems.sort((a, b) => a.s - b.s);
+    }
+    const nextBookings = C.bookings.filter((b) => new Date(b.start_at) >= tomorrow).sort((a, b) => a.start_at.localeCompare(b.start_at)).slice(0, 5);
+    const openTodos = C.todos.filter((t) => !t.done).sort((a, b) => a.priority - b.priority || (a.due || "9999").localeCompare(b.due || "9999")).slice(0, 6);
+    const openCount = C.todos.filter((t) => !t.done).length;
+    const unplanned = C.todos.filter((t) => !t.done && (!t.planned_start || new Date(t.planned_start) < now)).length;
+    const recent = contacts.slice().sort((a, b) => (b.updated || 0) - (a.updated || 0)).slice(0, 5);
+    const weekEnd = addDays(mondayOf(now), 7);
+    const weekBookings = C.bookings.filter((b) => new Date(b.start_at) >= now && new Date(b.start_at) < weekEnd).length;
+    const people = C.loaded ? sharedWithMe() : [];
+    const stepRow = (c) => `<button type="button" class="hrow" data-hopen="${c._id}"><span class="hdate ${c.nextDate < today ? "late" : c.nextDate === today ? "now" : ""}">${c.nextDate < today ? "überfällig" : c.nextDate === today ? "heute" : fmtDate(c.nextDate)}</span><span class="hmain"><strong>${esc(c.name || "Ohne Namen")}</strong><span>${esc(c.nextStep || "Next Step")}</span></span></button>`;
+    const tile = (n, label, tone, act) => `<button type="button" class="htile ${tone || ""}" ${act}><strong>${n}</strong><span>${label}</span></button>`;
+    v.innerHTML = `
+      <div class="hhead"><div><h2 class="page-title">${greet}, ${esc((displayName(S.me) || "").split(" ")[0])}</h2>
+        <p class="hint">${now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p></div>
+        <div class="hquick"><button class="btn primary" type="button" data-hact="contact">+ Kontakt</button><button class="btn" type="button" data-hact="todo">+ To-Do</button><button class="btn" type="button" data-hact="plan">Woche planen</button></div></div>
+      <div class="htiles">
+        ${tile(overdue.length + dueToday.length, "Next Steps fällig", overdue.length ? "warn" : "", 'data-hgo="due"')}
+        ${tile(C.loaded ? todayItems.length : "–", "heute geplant", "", 'data-hgo="woche"')}
+        ${tile(C.loaded ? weekBookings : "–", weekBookings === 1 ? "Termin diese Woche" : "Termine diese Woche", "", 'data-hgo="woche"')}
+        ${tile(C.loaded ? openCount : "–", "offene To-Dos", unplanned ? "warn" : "", 'data-hgo="todos"')}
+        ${LISTS.map((l) => tile(inList(l.id).length, l.label, "list", `data-hlist="${l.id}" style="--c: var(--l-${l.id})"`)).join("")}
+      </div>
+      <div class="hgrid">
+        <section class="hcard"><div class="hcard-h"><h3>Heute</h3><button class="linkbtn" type="button" data-hgo="woche">Zur Woche</button></div>
+          ${!C.loaded ? `<p class="hint">Wird geladen …</p>` : todayItems.length ? todayItems.map((x) => `<div class="hrow static ${x.kind}"><span class="hdate">${hm(x.s)}</span><span class="hmain"><strong>${esc(x.title)}</strong><span>${esc(x.sub)} · bis ${hm(x.e)}</span></span>${x.kind === "todo" ? `<input type="checkbox" data-htdone="${x.id}" aria-label="Erledigt">` : ""}</div>`).join("") : `<p class="hint">Heute ist nichts geplant.${unplanned ? ` Du hast ${unplanned} ${unplanned === 1 ? "offenes To-Do" : "offene To-Dos"}, die du einplanen kannst.` : ""}</p>`}
+        </section>
+        <section class="hcard"><div class="hcard-h"><h3>Fällige Next Steps</h3><button class="linkbtn" type="button" data-hgo="due">Alle anzeigen</button></div>
+          ${steps.length ? steps.map(stepRow).join("") : `<p class="hint">In den nächsten 7 Tagen ist kein Next Step fällig.</p>`}
+        </section>
+        <section class="hcard"><div class="hcard-h"><h3>Offene To-Dos</h3><button class="linkbtn" type="button" data-hgo="todos">Alle anzeigen</button></div>
+          ${!C.loaded ? `<p class="hint">Wird geladen …</p>` : openTodos.length ? openTodos.map((t) => `<div class="hrow static"><input type="checkbox" data-htdone="${t.id}" aria-label="Erledigt"><span class="hmain"><strong>${esc(t.title)}</strong><span>${t.priority === 1 ? "Hohe Priorität · " : ""}${t.planned_start && new Date(t.planned_start) > now ? `${dayLabel(new Date(t.planned_start))} ${hm(new Date(t.planned_start))}` : "nicht eingeplant"}${t.due ? " · fällig " + fmtDate(t.due) : ""}</span></span></div>`).join("") : `<p class="hint">Keine offenen To-Dos.</p>`}
+          ${unplanned ? `<button class="btn" type="button" data-hact="plan">${unplanned} ${unplanned === 1 ? "To-Do" : "To-Dos"} automatisch einplanen</button>` : ""}
+        </section>
+        <section class="hcard"><div class="hcard-h"><h3>Nächste Termine</h3><button class="linkbtn" type="button" data-hgo="buchen">Zeit buchen</button></div>
+          ${!C.loaded ? `<p class="hint">Wird geladen …</p>` : nextBookings.length ? nextBookings.map((b) => `<div class="hrow static booking"><span class="hdate">${dayLabel(new Date(b.start_at))}</span><span class="hmain"><strong>${esc(b.title)}</strong><span>${hm(new Date(b.start_at))} Uhr · ${b.owner === S.me.id ? "mit " + esc(b.booker_name) : "bei " + esc(b.owner_name)}</span></span></div>`).join("") : `<p class="hint">Keine weiteren Termine.</p>`}
+          ${people.length ? `<div class="hwho">${people.map((p) => { const d = C.previews[p.id]; const n = d && d.slots[0]; return `<button type="button" class="hwho-i" data-hbook="${p.id}"><strong>${esc(p.name)} hat Zeit</strong><span>${!d ? "…" : n ? `${dayLabel(n.s)}, ${hm(n.s)} Uhr` : "gerade nichts frei"}</span></button>`; }).join("")}</div>` : ""}
+        </section>
+        <section class="hcard"><div class="hcard-h"><h3>Zuletzt bearbeitet</h3><button class="linkbtn" type="button" data-view="list">Zur Liste</button></div>
+          ${recent.length ? recent.map((c) => `<button type="button" class="hrow" data-hopen="${c._id}"><span class="hmain"><strong>${esc(c.name || "Ohne Namen")}</strong><span>${esc([c.beruf, c.soziotop].filter(Boolean).join(" · ") || "Keine Angaben")}</span></span><span class="hlists">${c.lists.map((l) => `<i style="--c: var(--l-${l})" title="${esc(listById(l).label)}">${listById(l).short}</i>`).join("")}</span></button>`).join("") : `<p class="hint">Noch keine Kontakte. <button class="linkbtn" type="button" data-hact="contact">Ersten Kontakt anlegen</button></p>`}
+        </section>
+      </div>`;
+  }
+  $("homeView").addEventListener("click", async (e) => {
+    const t = e.target.closest("button"); if (!t) return;
+    const d = t.dataset;
+    if (d.hopen) { S.view = "list"; const c = S.contacts.get(d.hopen); if (c && !c.lists.includes(S.list)) S.list = c.lists[0]; renderAll(); openPanel("contact", d.hopen); return; }
+    if (d.hlist) { S.view = "list"; S.list = d.hlist; S.dueOnly = false; renderAll(); return; }
+    if (d.hgo === "due") { S.view = "list"; S.list = "haupt"; S.sort = "next"; $("sort").value = "next"; renderAll(); return; }
+    if (d.hgo) return openCal(d.hgo);
+    if (d.hbook) { C.target = d.hbook; C.pick = null; return openCal("buchen"); }
+    if (d.hact === "contact") { S.view = "list"; addContact(); return; }
+    if (d.hact === "todo") { await openCal("todos"); $("tdTitle")?.focus(); return; }
+    if (d.hact === "plan") { await autoPlan(); if (S.view !== "home") return; renderAll(); return; }
+  });
+  $("homeView").addEventListener("change", async (e) => {
+    const id = e.target.dataset.htdone; if (!id) return;
+    const x = C.todos.find((y) => y.id === id); if (!x) return;
+    x.done = true; renderAll();
+    const { error } = await S.sb.from("todos").update({ done: true }).eq("id", id);
+    if (error) { x.done = false; renderAll(); toast(error.message); } else toast(`„${x.title}“ erledigt.`, async () => { x.done = false; renderAll(); await S.sb.from("todos").update({ done: false }).eq("id", id); });
+  });
+
   // ---------- Hinweise ----------
   let toastTimer;
   function toast(msg, undo) {
@@ -1504,11 +1630,12 @@ window.KONTAKT_CONFIG = {
     const v = e.target.closest("[data-view]");
     if (v) {
       const to = v.dataset.view;
-      try { history.replaceState(null, "", to === "list" ? "#" : to === "admin" ? "#verwaltung" : to === "cal" ? "#kalender" : "#team"); } catch (err) {}
+      try { history.replaceState(null, "", to === "home" ? "#" : to === "list" ? "#liste" : to === "admin" ? "#verwaltung" : to === "cal" ? "#kalender" : "#team"); } catch (err) {}
       if (to === "list") { if (S.owner !== S.me.id) await openOwner(S.me.id, displayName(S.me), true); else { S.view = "list"; renderAll(); } }
       else if (to === "team") { S.view = "team"; renderAll(); await loadTeam(); renderAll(); }
       else if (to === "admin") await showAdmin();
       else if (to === "cal") await openCal();
+      else if (to === "home") await openHome();
       return;
     }
     const o = e.target.closest("[data-owner]");
