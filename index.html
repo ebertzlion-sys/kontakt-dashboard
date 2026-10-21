@@ -239,6 +239,13 @@ td input:disabled, td select:disabled { color: var(--fg); opacity: 1; }
 .cday.today { border-color: var(--accent); box-shadow: inset 0 3px 0 var(--accent); }
 .cday.past { opacity: .6; }
 .cweek.one { grid-template-columns: minmax(0, 720px); }
+.wrow-wrap { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.wlabel { margin: 0; font-size: 12px; font-weight: 600; color: var(--muted); font-family: var(--font-mono); }
+.wrow { display: grid; grid-template-columns: repeat(7, minmax(140px, 1fr)); scroll-snap-type: x proximity; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.wrow .cday { padding: 8px; scroll-snap-align: start; }
+.wrow .cday h3 { font-size: 14px; flex-wrap: wrap; }
+.wrow .ci { grid-template-columns: 1fr; padding: 5px 6px; }
+.wrow .ci .ca { grid-column: 1; }
 .seg { display: inline-flex; background: var(--surface-2); border-radius: 999px; padding: 3px; gap: 2px; flex-wrap: wrap; }
 .seg button { border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 999px; cursor: pointer; }
 .seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
@@ -1349,6 +1356,8 @@ window.KONTAKT_CONFIG = {
     else if (C.tab === "buchen") body = calBook();
     else body = calSettingsView();
     v.innerHTML = head + body;
+    const td = v.querySelector(".wrow .cday.today");
+    if (td) td.parentElement.scrollLeft = Math.max(0, td.offsetLeft - td.parentElement.offsetLeft - 8);
   }
   const RANGES = [["day", "Tag"], ["week", "Woche"], ["2weeks", "2 Wochen"], ["month", "Monat"]];
   function calRange() {
@@ -1381,6 +1390,11 @@ window.KONTAKT_CONFIG = {
       items.push({ s, kind: "todo" + (t.done ? " done" : ""), short: `${hm(s)} ${t.title}`, html: `<div class="ci todo ${t.done ? "done" : ""}"><span class="ct">${hm(s)}–${hm(e)}</span><label class="cx"><span class="row-c"><input type="checkbox" data-tdone="${t.id}" ${t.done ? "checked" : ""}> <strong>${esc(t.title)}</strong></span><span>${prioLabel(t.priority)}${t.due ? " · fällig " + fmtDate(t.due) : ""}</span></label><div class="ca"><button type="button" class="open-btn" data-tunplan="${t.id}">Ausplanen</button></div></div>` });
     }
     return items.sort((a, b) => a.s - b.s);
+  }
+  function isoWeek(d) {
+    const x = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    x.setUTCDate(x.getUTCDate() + 4 - (x.getUTCDay() || 7));
+    return Math.ceil(((x - Date.UTC(x.getUTCFullYear(), 0, 1)) / 86400000 + 1) / 7);
   }
   function calWeek() {
     const { s: ws, e: we } = calRange(), now = new Date();
@@ -1442,7 +1456,12 @@ window.KONTAKT_CONFIG = {
           ${!items.length && !focus.length && !ds.length && !blocked ? `<p class="hint">Nichts geplant</p>` : ""}
         </section>`);
       }
-      grid = `<div class="cweek ${C.range === "day" ? "one" : ""}">${days.join("")}</div>`;
+      if (C.range === "day") grid = `<div class="cweek one">${days.join("")}</div>`;
+      else {
+        const rows = [];
+        for (let i = 0; i < days.length; i += 7) rows.push(`<div class="wrow-wrap"><p class="wlabel">KW ${isoWeek(addDays(ws, i))}</p><div class="wrow">${days.slice(i, i + 7).join("")}</div></div>`);
+        grid = rows.join("");
+      }
     }
     const f = { day: "2-digit", month: "2-digit" };
     const label = C.range === "day" ? ws.toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })
