@@ -561,7 +561,7 @@ window.KONTAKT_CONFIG = {
     let rows = inList(S.list);
     if (S.soz) rows = rows.filter((c) => (c.soziotop || "") === S.soz);
     if (S.dueOnly) rows = rows.filter(isDue);
-    if (q) rows = rows.filter((c) => [c.name, c.soziotop, c.beruf, c.info, c.nextStep, c.pp, ...Object.values(c.custom || {})].join(" ").toLowerCase().includes(q));
+    if (q) rows = rows.filter((c) => [c.name, c.soziotop, c.beruf, c.info, c.nextStep, ...Object.values(c.custom || {})].join(" ").toLowerCase().includes(q));
     const by = {
       name: (a, b) => (a.name || "").localeCompare(b.name || "", "de", { sensitivity: "base" }),
       next: (a, b) => (a.nextDate || "9999").localeCompare(b.nextDate || "9999") || by.name(a, b),
@@ -751,7 +751,7 @@ window.KONTAKT_CONFIG = {
   }
   function renderTable() {
     const box = $("tableBox");
-    if (!S.loadedContacts) { box.innerHTML = `<div class="empty"><h2>Kontakte werden geladen …</h2><p>Hier erscheint gleich die Liste mit Name, Soziotop, Beruf, Informationen, Next Step und PP.</p></div>`; return; }
+    if (!S.loadedContacts) { box.innerHTML = `<div class="empty"><h2>Kontakte werden geladen …</h2><p>Hier erscheint gleich die Liste mit Name, Soziotop, Beruf, Informationen und Next Step.</p></div>`; return; }
     const rows = visibleRows();
     const custom = fieldsFor(S.list);
     const label = listById(S.list).label;
@@ -765,7 +765,7 @@ window.KONTAKT_CONFIG = {
     }
     const allSel = rows.every((c) => S.selected.has(c._id));
     const head = `<tr><th class="rn sticky1">#</th><th class="check sticky2"><input type="checkbox" id="selAll" ${allSel ? "checked" : ""} aria-label="Alle auswählen"></th>
-      <th class="sticky3">Name</th><th>Listen</th><th>Soziotop</th><th>Beruf</th><th>Informationen</th><th>Next Step</th><th>Fällig am</th><th>PP</th>
+      <th class="sticky3">Name</th><th>Listen</th><th>Soziotop</th><th>Beruf</th><th>Informationen</th><th>Next Step</th><th>Fällig am</th>
       ${S.list === "kunden" ? `<th class="custom">Service-Termin</th><th class="custom" title="Wird automatisch ein halbes Jahr nach dem Service-Termin eingetragen">Nächster Service</th>` : ""}
       ${custom.map((f) => `<th class="custom" title="Eigenes Feld">${esc(f.label)}</th>`).join("")}
       <th></th></tr>`;
@@ -782,7 +782,6 @@ window.KONTAKT_CONFIG = {
         <td class="w-info">${cellInput(c, id, "info")}</td>
         <td class="w-ns">${cellInput(c, id, "nextStep")}</td>
         <td class="date-c ${isDue(c) ? "due" : ""}"><div class="date-wrap"><input class="cell" type="date" data-id="${id}" data-f="nextDate" value="${esc(c.nextDate || "")}" aria-label="Fällig am" ${dis}><button type="button" class="cal-btn" data-cal="${id}" title="In den Kalender eintragen" ${c.nextDate ? "" : "hidden"}>Kalender</button></div></td>
-        <td class="w-pp">${cellInput(c, id, "pp")}</td>
         ${S.list === "kunden" ? `<td class="w-c date-c">${cellInput(c, id, "c:_service", SERVICE_FIELD)}</td><td class="w-c date-c svc ${serviceState(c)}">${cellInput(c, id, "c:_serviceNext", SERVICE_FIELD)}</td>` : ""}
         ${custom.map((f) => `<td class="w-c ${f.type === "janein" ? "bool" : ""} ${f.type === "datum" ? "date-c" : ""}">${cellInput(c, id, "c:" + f.id, f)}</td>`).join("")}
         <td class="act"><button type="button" class="open-btn" data-open="${id}" title="Alle Angaben ansehen">Öffnen</button></td>
@@ -886,7 +885,6 @@ window.KONTAKT_CONFIG = {
           <button class="btn primary" type="button" data-cal="${id}" id="calBtn">In Kalender eintragen</button>
           <p class="hint" style="flex-basis:100%">Öffnet den Termin im Kalender deines iPhones oder Computers, du bestätigst ihn dort mit „Hinzufügen“. Eine Erinnerung ist schon eingestellt.</p>
         </div>
-        ${dField(c, id, "pp", "PP")}
         ${c.lists.includes("kunden") ? `<h3 class="section-title">Service</h3>
         <div class="grid2">${dField(c, id, "c:_service", "Service-Termin", SERVICE_FIELD)}${dField(c, id, "c:_serviceNext", "Nächster Service (automatisch +6 Monate)", SERVICE_FIELD)}</div>
         <div class="cal-bar"><button class="btn" type="button" data-svcal="${id}" ${serviceNext(c) ? "" : "disabled"}>Nächsten Service in Kalender</button><span class="hint">Trag nach jedem Service das neue Datum ein, der nächste Termin rückt dann automatisch nach.</span></div>` : ""}
@@ -907,7 +905,7 @@ window.KONTAKT_CONFIG = {
         </div></div>`).join("");
     return `<div class="drawer-head"><h2>Felder verwalten</h2><button class="btn ghost" type="button" data-act="close">Schließen</button></div>
       <div class="drawer-body">
-        <p class="hint">Name, Soziotop, Beruf, Informationen, Next Step und PP sind in jeder Liste fest dabei. Hier legst du zusätzliche Felder an und bestimmst, in welchen Listen sie erscheinen.</p>
+        <p class="hint">Name, Soziotop, Beruf, Informationen und Next Step sind in jeder Liste fest dabei. Hier legst du zusätzliche Felder an und bestimmst, in welchen Listen sie erscheinen.</p>
         <h3 class="section-title">Neues Feld</h3>
         <form id="fAdd" class="field" style="gap:10px">
           <div class="grid2">
@@ -932,7 +930,7 @@ window.KONTAKT_CONFIG = {
     return `<div class="drawer-head"><h2>Liste importieren</h2><button class="btn ghost" type="button" data-act="close">Schließen</button></div>
       <div class="drawer-body">
         <p class="hint">Markiere deine bestehende Liste in Excel, Numbers oder Google Sheets inklusive Kopfzeile, kopiere sie und füge sie hier ein. Eine CSV aus dem bisherigen Dashboard funktioniert auch, inklusive der Listen-Zuordnung. Spalten, die keinem Basisfeld entsprechen, werden als eigene Felder angelegt.</p>
-        <label class="field"><span>Eingefügte Liste</span><textarea class="paste" id="impText" data-autofocus placeholder="Name&#9;Soziotop&#9;Beruf&#9;Informationen&#9;Next Step&#9;PP">${esc(importText)}</textarea></label>
+        <label class="field"><span>Eingefügte Liste</span><textarea class="paste" id="impText" data-autofocus placeholder="Name&#9;Soziotop&#9;Beruf&#9;Informationen&#9;Next Step">${esc(importText)}</textarea></label>
         <label class="field"><span>CSV-Datei statt Einfügen</span><input type="file" id="impFile" accept=".csv,.txt,text/csv"></label>
         <label class="field"><span>Aufnehmen in</span><select id="impList">${LISTS.map((l) => `<option value="${l.id}" ${l.id === S.list ? "selected" : ""}>${esc(l.label)}</option>`).join("")}</select></label>
         <div id="impPrev">${importPreview(p)}</div>
@@ -1066,7 +1064,7 @@ window.KONTAKT_CONFIG = {
       when = [`DTSTART;VALUE=DATE:${d}`, `DTEND;VALUE=DATE:${next.getFullYear()}${pad(next.getMonth() + 1)}${pad(next.getDate())}`, "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:Erinnerung", "TRIGGER:PT9H", "END:VALARM"];
     }
     const title = (c.nextStep ? c.nextStep + " – " : "Next Step – ") + (c.name || "Kontakt");
-    const desc = [c.beruf && "Beruf: " + c.beruf, c.soziotop && "Soziotop: " + c.soziotop, c.pp && "PP: " + c.pp, c.info].filter(Boolean).join("\n");
+    const desc = [c.beruf && "Beruf: " + c.beruf, c.soziotop && "Soziotop: " + c.soziotop, c.info].filter(Boolean).join("\n");
     const valarmAt = when.indexOf("BEGIN:VALARM");
     const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Kontakt-Dashboard//DE", "CALSCALE:GREGORIAN", "BEGIN:VEVENT",
       `UID:${id}-${d}@kontakt-dashboard`, `DTSTAMP:${stamp}`, ...when.slice(0, valarmAt),
@@ -1082,9 +1080,9 @@ window.KONTAKT_CONFIG = {
   function exportCsv() {
     const rows = visibleRows(), custom = fieldsFor(S.list);
     const svcCols = S.list === "kunden";
-    const head = ["Name", "Soziotop", "Beruf", "Informationen", "Next Step", "Fällig am", "PP", ...(svcCols ? ["Service-Termin", "Nächster Service"] : []), ...custom.map((f) => f.label), "Listen"];
+    const head = ["Name", "Soziotop", "Beruf", "Informationen", "Next Step", "Fällig am", ...(svcCols ? ["Service-Termin", "Nächster Service"] : []), ...custom.map((f) => f.label), "Listen"];
     const q = (v) => { const s = v === true ? "ja" : v === false || v == null ? "" : String(v); return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-    const lines = [head.map(q).join(";")].concat(rows.map((c) => [c.name, c.soziotop, c.beruf, c.info, c.nextStep, c.nextDate, c.pp, ...(svcCols ? [(c.custom || {})._service, (c.custom || {})._serviceNext] : []), ...custom.map((f) => (c.custom || {})[f.id]), c.lists.map((l) => listById(l).label).join(", ")].map(q).join(";")));
+    const lines = [head.map(q).join(";")].concat(rows.map((c) => [c.name, c.soziotop, c.beruf, c.info, c.nextStep, c.nextDate, ...(svcCols ? [(c.custom || {})._service, (c.custom || {})._serviceNext] : []), ...custom.map((f) => (c.custom || {})[f.id]), c.lists.map((l) => listById(l).label).join(", ")].map(q).join(";")));
     const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
