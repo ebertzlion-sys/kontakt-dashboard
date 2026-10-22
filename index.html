@@ -286,6 +286,9 @@ td input:disabled, td select:disabled { color: var(--fg); opacity: 1; }
 .ci .ca { grid-column: 2; display: flex; gap: 6px; flex-wrap: wrap; }
 .ci.booking { background: var(--accent-soft); }
 .ci.todo { background: var(--surface-2); }
+.ev-form { max-width: 560px; }
+.ev-form .ev-allday { flex-direction: row; align-items: center; gap: 8px; align-self: end; padding-bottom: 8px; }
+.ev-form:has(#evAllDay:checked) .ev-times { display: none; }
 .ci.private { background: var(--surface-2); border-left: 3px solid var(--muted); }
 .ext-status { margin: 0; font-size: 13px; }
 .ext-status.ok { color: var(--l-kunden); }
@@ -1450,6 +1453,7 @@ window.KONTAKT_CONFIG = {
       const dOnly = (x) => `${x.getFullYear()}${pad(x.getMonth() + 1)}${pad(x.getDate())}`;
       lines.push("BEGIN:VEVENT", `UID:${ev.uid}@kontakt-dashboard`, `DTSTAMP:${stamp}`, ...(ev.allDay ? [`DTSTART;VALUE=DATE:${dOnly(ev.s)}`, `DTEND;VALUE=DATE:${dOnly(addDays(ev.s, 1))}`] : [`DTSTART:${f(ev.s)}`, `DTEND:${f(ev.e)}`]), `SUMMARY:${icsText(ev.title)}`);
       if (ev.desc) lines.push(`DESCRIPTION:${icsText(ev.desc)}`);
+      if (ev.location) lines.push(`LOCATION:${icsText(ev.location)}`);
       lines.push("BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:Erinnerung", ev.allDay ? "TRIGGER:-P7D" : "TRIGGER:-PT15M", "END:VALARM", "END:VEVENT");
     }
     lines.push("END:VCALENDAR");
@@ -1525,6 +1529,23 @@ window.KONTAKT_CONFIG = {
     const x = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
     x.setUTCDate(x.getUTCDate() + 4 - (x.getUTCDay() || 7));
     return Math.ceil(((x - Date.UTC(x.getUTCFullYear(), 0, 1)) / 86400000 + 1) / 7);
+  }
+  function newEventForm(ws) {
+    const now = new Date();
+    const day = C.range === "day" || ws > now ? isoDate(ws) : isoDate(now);
+    const h = Math.min(now.getHours() + 1, 22);
+    const pad = (n) => String(n).padStart(2, "0");
+    return `<form id="evForm" class="book-form ev-form">
+      <h3 class="section-title">Neuer Termin</h3>
+      <label class="field"><span>Titel</span><input id="evTitle" type="text" required placeholder="z. B. Analyse mit Max Muster"></label>
+      <div class="grid2"><label class="field"><span>Datum</span><input id="evDate" type="date" required value="${day}"></label>
+        <label class="field ev-allday"><span>Ganztägig</span><input id="evAllDay" type="checkbox"></label></div>
+      <div class="grid2 ev-times"><label class="field"><span>Von</span><input id="evFrom" type="time" value="${pad(h)}:00"></label><label class="field"><span>Bis</span><input id="evTo" type="time" value="${pad(h + 1)}:00"></label></div>
+      <label class="field"><span>Ort (optional)</span><input id="evLoc" type="text" placeholder="z. B. Büro Stuttgart"></label>
+      <label class="field"><span>Notiz (optional)</span><input id="evNote" type="text"></label>
+      <p class="hint">Dein iPhone fragt danach, in welchen Kalender der Termin soll. Wähle dort zum Beispiel „tecis“. Ist dieser Kalender hier verbunden, erscheint der Termin nach dem nächsten Abgleich auch im Cockpit.</p>
+      <div class="row"><button class="btn primary" type="submit">In iPhone-Kalender eintragen</button><button class="btn ghost" type="button" data-cact="newev">Abbrechen</button></div>
+    </form>`;
   }
   function calWeek() {
     const { s: ws, e: we } = calRange(), now = new Date();
@@ -1603,7 +1624,9 @@ window.KONTAKT_CONFIG = {
     const exportable = rBookings.length + rTodos.filter((t) => !t.done).length;
     return `<div class="cal-bar"><div class="seg" role="group" aria-label="Ansicht">${RANGES.map(([k, l]) => `<button type="button" data-crange="${k}" aria-pressed="${C.range === k}">${l}</button>`).join("")}</div>
         <span class="spacer"></span><button class="btn" type="button" data-cact="weekics" ${exportable ? "" : "disabled"}>In iPhone-Kalender</button><button class="btn primary" type="button" data-cact="autoplan">Automatisch einplanen</button></div>
-      <div class="cal-bar"><div class="weeknav"><button class="btn" type="button" data-cweek="-1" aria-label="${unit[0]}">‹</button><strong>${label}</strong><button class="btn" type="button" data-cweek="1" aria-label="${unit[1]}">›</button>${isNow ? "" : `<button class="btn ghost" type="button" data-cweek="0">Heute</button>`}</div></div>
+      <div class="cal-bar"><div class="weeknav"><button class="btn" type="button" data-cweek="-1" aria-label="${unit[0]}">‹</button><strong>${label}</strong><button class="btn" type="button" data-cweek="1" aria-label="${unit[1]}">›</button>${isNow ? "" : `<button class="btn ghost" type="button" data-cweek="0">Heute</button>`}</div>
+        <span class="spacer"></span>${C.exts && C.exts.length ? `<button class="btn" type="button" data-cact="extsync" ${C.extSyncing ? "disabled" : ""} title="iPhone-Kalender jetzt abgleichen">${C.extSyncing ? "Wird aktualisiert …" : "Aktualisieren"}</button>` : ""}<button class="btn" type="button" data-cact="newev" aria-expanded="${!!C.newEv}">+ Termin</button></div>
+      ${C.newEv ? newEventForm(ws) : ""}
       <div class="cal-sum"><span><strong>${rSlots.length}</strong> buchbare Termine frei</span><span><strong>${(Math.round(focusFree / 6) / 10).toLocaleString("de-DE")} Std.</strong> To-Do-Zeit frei</span><span><strong>${rBookings.length + rExt.length}</strong> ${rBookings.length + rExt.length === 1 ? "Termin" : "Termine"}</span><span><strong>${rTodos.filter((t) => !t.done).length}</strong> To-Dos eingeplant</span></div>
       ${tips.length ? `<div class="tips">${tips.map((t) => `<p>${t}</p>`).join("")}</div>` : ""}
       ${grid}`;
@@ -1762,6 +1785,7 @@ window.KONTAKT_CONFIG = {
     if (d.crange) { C.range = d.crange; try { localStorage.setItem("calRange", C.range); } catch (err) { /* egal */ } renderAll(); return; }
     if (d.cday) { C.range = "day"; C.week = new Date(d.cday + "T12:00:00"); renderAll(); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
     if (d.cact === "autoplan") return autoPlan();
+    if (d.cact === "newev") { C.newEv = !C.newEv; renderAll(); if (C.newEv) $("evTitle")?.focus(); return; }
     if (d.cact === "weekics") {
       const { s: ws, e: we } = calRange();
       const ev = C.bookings.filter((b) => new Date(b.start_at) >= ws && new Date(b.start_at) < we).map(bookingEvent)
@@ -1884,6 +1908,16 @@ window.KONTAKT_CONFIG = {
   });
   calV.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (e.target.id === "evForm") {
+      const title = $("evTitle").value.trim(), date = $("evDate").value, allDay = $("evAllDay").checked;
+      if (!title || !date) return toast("Bitte Titel und Datum eingeben.");
+      const s = allDay ? new Date(date + "T12:00:00") : new Date(`${date}T${$("evFrom").value || "09:00"}:00`);
+      const en = allDay ? s : new Date(`${date}T${$("evTo").value || "10:00"}:00`);
+      if (!allDay && en <= s) return toast("Das Ende muss nach dem Beginn liegen.");
+      calIcsDownload([{ uid: "termin-" + Date.now().toString(36), s, e: en, allDay, title, desc: $("evNote").value.trim(), location: $("evLoc").value.trim() }], `${title.replace(/[^\wäöüÄÖÜß-]+/g, "-").slice(0, 40)}-${date}.ics`);
+      C.newEv = false; renderAll();
+      return toast("Wähle im iPhone den Kalender aus und tippe auf „Hinzufügen“.");
+    }
     if (e.target.id === "todoAdd") {
       const title = $("tdTitle").value.trim(); if (!title) return;
       const row = { owner: S.me.id, title, duration_min: Number($("tdDur").value), priority: Number($("tdPrio").value), due: $("tdDue").value || null };
