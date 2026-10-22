@@ -340,41 +340,126 @@ td input:disabled, td select:disabled { color: var(--fg); opacity: 1; }
 .share-list { display: flex; flex-direction: column; gap: 6px; }
 .share-item { display: flex; gap: 8px; align-items: center; }
 
-/* Startseite */
-.hhead { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: space-between; }
-.hhead .hint { margin: 2px 0 0; }
-.hquick { display: flex; flex-wrap: wrap; gap: 8px; }
-.htiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
-.htile { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
-.htile:hover { border-color: var(--accent); }
-.htile strong { font-family: var(--font-display); font-size: 26px; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.htile span { color: var(--muted); font-size: 12.5px; }
-.htile.warn { background: var(--warn-soft); border-color: var(--warn); }
-.htile.warn strong { color: var(--warn); }
-.htile.list { box-shadow: inset 3px 0 0 var(--c); }
-.hgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; align-items: start; }
-@media (max-width: 400px) { .hgrid { grid-template-columns: 1fr; } }
-.hcard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.hcard-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px; }
-.hcard-h h3 { margin: 0; font-family: var(--font-display); font-size: 16px; }
-.hcard .hint { margin: 0; }
-.hrow { display: flex; gap: 10px; align-items: center; text-align: left; border: 0; background: none; padding: 7px 6px; border-radius: 6px; width: 100%; border-bottom: 1px solid var(--line); }
-.hrow:last-of-type { border-bottom: 0; }
-button.hrow:hover { background: var(--surface-2); }
-.hrow.static.booking .hdate { color: var(--accent); }
-.hdate { font-family: var(--font-mono); font-size: 12px; color: var(--muted); min-width: 74px; white-space: nowrap; }
-.hdate.late { color: var(--danger); font-weight: 600; }
-.hdate.now { color: var(--warn); font-weight: 600; }
-.hmain { display: flex; flex-direction: column; min-width: 0; flex: 1; }
-.hmain strong { font-weight: 600; overflow-wrap: anywhere; }
-.hmain span { color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
-.hrow input[type="checkbox"] { width: 17px; height: 17px; flex: none; }
-.hlists { display: flex; gap: 3px; }
-.hlists i { font-style: normal; font-family: var(--font-mono); font-size: 10px; font-weight: 600; border-radius: 999px; padding: 1px 6px; background: var(--c); color: var(--surface); }
-.hwho { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; border-top: 1px solid var(--line); padding-top: 8px; }
-.hwho-i { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 7px 10px; display: flex; flex-direction: column; }
-.hwho-i:hover { border-color: var(--accent); }
-.hwho-i span { color: var(--muted); font-size: 12.5px; }
+/* Startseite „Woche im Blick“: Kopf, Zeitstrahl des Tages, Termine Mo–So, darunter Next Steps | To-Dos | Team */
+#homeView { padding-block: 16px 32px; display: flex; flex-direction: column; gap: 14px; }
+.wb-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: space-between; }
+.wb-head .hint { margin: 2px 0 0; }
+.wb-tools { display: flex; gap: 8px; align-items: center; position: relative; flex-wrap: wrap; }
+.wb-tools input[type="search"] { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); padding: 7px 12px; width: 240px; max-width: 100%; }
+.wb-menu { position: absolute; right: 0; top: calc(100% + 6px); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); z-index: 6; display: flex; flex-direction: column; padding: 4px; min-width: 180px; }
+.wb-menu button { border: 0; background: none; text-align: left; padding: 8px 10px; border-radius: 6px; }
+.wb-menu button:hover { background: var(--surface-2); }
+.wb-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; display: flex; flex-direction: column; min-width: 0; }
+.wb-ch { display: flex; justify-content: space-between; align-items: baseline; gap: 4px 10px; flex-wrap: wrap; padding: 12px 14px 8px; }
+.wb-ch h3 { margin: 0; font-family: var(--font-display); font-size: 16px; white-space: nowrap; }
+.wb-ch .linkbtn { text-decoration: none; font-weight: 600; font-size: 13px; }
+.wb-ch .hint { margin: 0; font-size: 12.5px; }
+.wb-empty { color: var(--muted); font-size: 13px; padding: 4px 14px 14px; margin: 0; }
+.wb-more { border: 0; border-top: 1px solid var(--line); background: none; text-align: left; padding: 8px 14px; color: var(--accent); font-weight: 600; font-size: 13px; border-radius: 0 0 12px 12px; }
+.wb-more:hover { background: var(--surface-2); }
+
+/* Zeitstrahl */
+.wb-tl { padding: 12px 14px 10px; display: flex; flex-direction: column; gap: 6px; }
+.wb-tl-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.wb-tl-h .linkbtn { font-family: var(--font-body); text-transform: none; letter-spacing: 0; font-size: 12.5px; text-decoration: none; font-weight: 600; }
+.wb-tl-set { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--fg); text-transform: none; letter-spacing: 0; font-family: var(--font-body); }
+.wb-tl-set select { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 3px 6px; }
+.wb-track { position: relative; height: 40px; background: var(--surface-2); border-radius: 8px; margin-top: 14px; }
+.wb-blk { position: absolute; top: 4px; bottom: 4px; border-radius: 6px; padding: 3px 7px; font-size: 11.5px; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 6px; border: 1px solid var(--l-kunden); background: var(--surface); color: var(--l-kunden); }
+.wb-blk.book { border-color: var(--accent); color: var(--accent); }
+.wb-blk.todo { border-style: dashed; border-color: var(--muted); color: var(--muted); }
+.wb-now { position: absolute; top: -6px; bottom: -6px; width: 2px; background: var(--danger); }
+.wb-now::before { content: "jetzt"; position: absolute; top: -14px; left: -10px; font-family: var(--font-mono); font-size: 9.5px; color: var(--danger); }
+.wb-axis { position: relative; height: 14px; font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); }
+.wb-axis span { position: absolute; transform: translateX(-50%); }
+.wb-axis span:first-child { transform: none; }
+.wb-axis span:last-child { transform: translateX(-100%); }
+.wb-allday { font-size: 12px; color: var(--muted); }
+
+/* Termine der Woche */
+.wb-legend { display: flex; gap: 12px; font-size: 12px; color: var(--muted); align-items: center; flex-wrap: wrap; }
+.wb-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; border: 2px solid var(--c); }
+.wb-week-sc { overflow-x: auto; padding: 0 12px 12px; }
+.wb-week { display: grid; grid-template-columns: repeat(7, minmax(96px, 1fr)); gap: 6px; }
+.wb-day { background: var(--bg); border-radius: 10px; padding: 7px; display: flex; flex-direction: column; gap: 5px; min-width: 0; min-height: 110px; }
+.wb-day.today { background: var(--accent-soft); }
+.wb-day.past { opacity: .6; }
+.wb-day.we { background: var(--surface-2); }
+.wb-day.we.today { background: var(--accent-soft); }
+.wb-day h4 { margin: 0; display: flex; justify-content: space-between; align-items: baseline; font-size: 12.5px; font-weight: 600; }
+.wb-day h4 small { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); font-weight: 500; }
+.wb-day.today h4 { color: var(--accent); }
+.wb-ev { background: var(--surface); border-radius: 6px; padding: 4px 6px; display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--line); border-left: 3px solid var(--l-kunden); }
+.wb-ev b { font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; color: var(--muted); }
+.wb-ev span { font-size: 12px; line-height: 1.25; overflow-wrap: anywhere; }
+.wb-ev.book { border-left-color: var(--accent); }
+.wb-day .none { font-size: 12px; color: var(--muted); }
+
+/* Raster unten */
+.wb-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.wb-grid.two { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+@media (max-width: 1180px) { .wb-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+@media (max-width: 700px) { .wb-grid, .wb-grid.two { grid-template-columns: minmax(0, 1fr); } }
+.wb-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+/* Next Steps */
+.wb-seg { display: flex; gap: 3px; background: var(--surface-2); border-radius: 9px; padding: 3px; margin: 0 14px 8px; }
+.wb-seg button { flex: 1; border: 0; background: none; padding: 5px 6px; border-radius: 7px; font-weight: 600; color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+.wb-seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.wb-seg b { font-family: var(--font-mono); font-weight: 500; font-size: 11px; margin-left: 3px; }
+.wb-seg b.late { color: var(--danger); }
+.wb-row { display: flex; align-items: center; gap: 10px; padding: 7px 14px; border-top: 1px solid var(--line); min-width: 0; }
+.wb-dt { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); width: 84px; flex: none; white-space: nowrap; }
+.wb-dt.late { color: var(--danger); font-weight: 600; }
+.wb-dt.now { color: var(--warn); font-weight: 600; }
+.wb-tx { flex: 1; min-width: 0; border: 0; background: none; padding: 0; text-align: left; display: flex; flex-direction: column; }
+.wb-tx strong { font-weight: 600; overflow-wrap: anywhere; }
+.wb-tx span { color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
+button.wb-tx:hover strong { color: var(--accent); }
+.wb-ic { display: flex; gap: 4px; flex: none; }
+.wb-ic button { width: 28px; height: 26px; border-radius: 7px; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; font-size: 12px; color: var(--muted); padding: 0; }
+.wb-ic button:hover { border-color: var(--accent); color: var(--accent); }
+.wb-ic button.ok { color: var(--l-kunden); }
+.wb-row.open { background: var(--accent-soft); }
+.wb-resched { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; padding: 0 14px 9px; background: var(--accent-soft); }
+.wb-resched small { color: var(--muted); font-size: 12px; }
+.wb-resched button, .wb-resched input { font-size: 12px; border: 1px solid var(--accent); color: var(--accent); background: var(--surface); border-radius: 999px; padding: 2px 10px; font-weight: 600; }
+.wb-resched input { border-radius: 6px; font-weight: 500; }
+
+/* To-Dos */
+.wb-row input[type="checkbox"] { width: 17px; height: 17px; flex: none; margin: 0; }
+
+/* Team */
+.wb-person { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border: 0; border-top: 1px solid var(--line); background: none; width: 100%; text-align: left; }
+.wb-person:hover { background: var(--surface-2); }
+.wb-av { width: 26px; height: 26px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-weight: 600; font-size: 12px; flex: none; }
+.wb-person strong { flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wb-badge { font-family: var(--font-mono); font-size: 10.5px; border-radius: 999px; padding: 1px 7px; background: var(--surface-2); color: var(--muted); }
+.wb-badge.late { background: var(--danger-soft); color: var(--danger); }
+.wb-chev { color: var(--muted); font-size: 12px; width: 12px; text-align: center; }
+.wb-trow { display: flex; gap: 10px; align-items: baseline; padding: 3px 14px 6px 50px; min-width: 0; }
+.wb-trow .wb-dt { width: 96px; }
+
+/* Großer Bildschirm (MacBook, iPad quer): Navigation als Seitenleiste links */
+.views svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.8; flex: none; vertical-align: -3px; margin-right: 6px; }
+.views em { font-style: normal; font-family: var(--font-mono); font-size: 11px; background: var(--danger-soft); color: var(--danger); border-radius: 999px; padding: 0 7px; margin-left: 6px; }
+@media (min-width: 1024px) {
+  #appView { padding-left: 232px; }
+  header.top { position: fixed; top: 0; left: 0; bottom: 0; width: 232px; border-bottom: 0; border-right: 1px solid var(--line); overflow-y: auto; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  header.top > .wrap { display: flex; flex-direction: column; gap: 18px; min-height: 100%; padding-block: 20px 14px; padding-left: max(14px, env(safe-area-inset-left, 0px)); padding-right: 14px; }
+  .top-row { display: contents; }
+  .brand { order: 1; margin-right: 0; padding-inline: 8px; }
+  .views { order: 2; flex-direction: column; background: none; padding: 0; border-radius: 0; gap: 2px; overflow: visible; }
+  .views button { display: flex; align-items: center; text-align: left; border-radius: 8px; padding: 8px 10px; }
+  .views button em { margin-left: auto; }
+  .views button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); box-shadow: none; }
+  .tabs { order: 3; flex-direction: column; overflow: visible; gap: 2px; border-top: 1px solid var(--line); padding-top: 12px; }
+  .tab { border-bottom: 0; border-left: 3px solid transparent; padding: 7px 10px; border-radius: 0 8px 8px 0; }
+  .tab .n { margin-left: auto; }
+  .tab[aria-selected="true"] { border-left-color: var(--c); background: var(--surface-2); }
+  .who { order: 4; margin-top: auto; border-top: 1px solid var(--line); padding-top: 12px; justify-content: space-between; flex-wrap: wrap; }
+  .table-box { max-height: calc(100dvh - 150px); }
+}
 </style>
 </head>
 <body>
@@ -749,8 +834,17 @@ window.KONTAKT_CONFIG = {
   // ---------- Darstellung ----------
   function renderViews() {
     const isMine = S.owner === S.me.id;
-    const b = (v, label) => `<button type="button" data-view="${v}" aria-pressed="${S.view === v && (v !== "list" || isMine)}">${label}</button>`;
-    $("views").innerHTML = b("home", "Start") + b("list", "Meine Liste") + b("cal", "Kalender") + b("team", `Team${S.team.length ? " (" + S.team.length + ")" : ""}`) + (S.me.role === "admin" ? b("admin", "Verwaltung") : "");
+    const ICON = {
+      home: '<path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/>',
+      list: '<path d="M5 6h14M5 12h14M5 18h14"/>',
+      cal: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
+      team: '<circle cx="9" cy="9" r="3.2"/><circle cx="17" cy="10" r="2.5"/><path d="M3 19c.8-3 3.2-4.5 6-4.5s5.2 1.5 6 4.5M15 15.3c2.5-.3 4.5 1 5.2 3.7"/>',
+      admin: '<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>',
+    };
+    const today = isoDate(new Date());
+    const due = isMine ? [...S.contacts.values()].filter((c) => c.nextDate && c.nextDate <= today).length : 0;
+    const b = (v, label, badge) => `<button type="button" data-view="${v}" aria-pressed="${S.view === v && (v !== "list" || isMine)}"><svg viewBox="0 0 24 24" aria-hidden="true">${ICON[v]}</svg>${label}${badge ? `<em aria-label="${badge} fällig">${badge}</em>` : ""}</button>`;
+    $("views").innerHTML = b("home", "Start", due) + b("list", "Meine Liste") + b("cal", "Kalender") + b("team", `Team${S.team.length ? " (" + S.team.length + ")" : ""}`) + (S.me.role === "admin" ? b("admin", "Verwaltung") : "");
     $("listView").hidden = S.view !== "list";
     $("homeView").hidden = S.view !== "home";
     $("teamView").hidden = S.view !== "team";
@@ -1252,6 +1346,7 @@ window.KONTAKT_CONFIG = {
     const err = [st, td, bk, mb, ac, ns].find((r) => r.error);
     if (err) { toast("Kalender konnte nicht geladen werden. Ist kalender.sql in Supabase ausgeführt? (" + err.error.message + ")"); }
     C.settings = settingsRow(st.data);
+    C.dayHours = st.data && st.data.day_hours ? st.data.day_hours : C.dayHours || null;
     C.todos = td.data || []; C.bookings = bk.data || []; C.members = mb.data || []; C.access = ac.data || []; C.nextSteps = ns.data || [];
     C.exts = ex.error ? null : ex.data || [];
     C.nsShare = nsh.error ? null : nsh.data || [];
@@ -1809,109 +1904,226 @@ window.KONTAKT_CONFIG = {
   });
 
   // ---------- Startseite ----------
+  const H = { tab: "due", resched: null, menu: false, tlEdit: false, open: new Set() };
+  try {
+    H.tab = localStorage.getItem("homeTab") || "due";
+    H.open = new Set(JSON.parse(localStorage.getItem("homeTeamOpen") || "[]"));
+  } catch (e) {}
+  function remember() { try { localStorage.setItem("homeTab", H.tab); localStorage.setItem("homeTeamOpen", JSON.stringify([...H.open])); } catch (e) {} }
+  // Arbeitszeit für den Zeitstrahl: gespeichert in cal_settings.day_hours, sonst auf diesem Gerät
+  function dayHours() {
+    let h = C.dayHours;
+    if (!h) { try { h = JSON.parse(localStorage.getItem("dayHours") || "null"); } catch (e) {} }
+    const s = Number(h && h.start), e = Number(h && h.end);
+    return s >= 0 && e <= 24 && s < e ? { start: s, end: e } : { start: 8, end: 20 };
+  }
+  async function saveDayHours(h) {
+    C.dayHours = h;
+    try { localStorage.setItem("dayHours", JSON.stringify(h)); } catch (e) {}
+    const { error } = await S.sb.from("cal_settings").upsert({ owner: S.me.id, day_hours: h, updated_at: new Date().toISOString() });
+    if (error) toast("Arbeitszeit gilt vorerst nur auf diesem Gerät. Für alle Geräte die SQL-Zeile zu day_hours in Supabase ausführen.");
+    else toast(`Zeitstrahl zeigt jetzt ${h.start} bis ${h.end} Uhr.`);
+  }
   async function openHome() {
     const own = S.owner !== S.me.id ? openOwner(S.me.id, displayName(S.me), true) : null;
     S.view = "home"; renderAll();
     const cal = loadCal();
     if (own) await own;
     await cal; if (S.view === "home") renderAll();
-    await loadPreviews(); if (S.view === "home") renderAll();
+  }
+  // Termine (Buchungen und Kalender mit Titel) zwischen from und to
+  function eventsBetween(from, to) {
+    const out = [];
+    for (const b of C.bookings) { const s = new Date(b.start_at), e = new Date(b.end_at); if (s < to && e > from) out.push({ s, e, kind: "book", title: b.title || "Termin", sub: b.owner === S.me.id ? "mit " + b.booker_name : "bei " + b.owner_name }); }
+    for (const x of extEvents()) { if (x.s < to && x.e > from) out.push({ s: x.s, e: x.e, allDay: x.allDay, kind: "ext", title: x.title, sub: x.location || "Kalender „" + x.cal + "“" }); }
+    return out.sort((a, b) => a.s - b.s);
+  }
+  function stepLabel(d, today) {
+    if (d < today) { const n = Math.round((new Date(today + "T12:00:00") - new Date(d + "T12:00:00")) / 864e5); return { cls: "late", txt: n === 1 ? "seit gestern" : `seit ${n} Tagen` }; }
+    if (d === today) return { cls: "now", txt: "heute" };
+    if (d === isoDate(addDays(new Date(), 1))) return { cls: "", txt: "morgen" };
+    const x = new Date(d + "T12:00:00");
+    return { cls: "", txt: d <= isoDate(addDays(new Date(), 6)) ? DAYS[weekday(x) - 1] + " " + fmtDate(d) : fmtDate(d) + String(x.getFullYear()).slice(2) };
   }
   function renderHome() {
     const v = $("homeView");
     const now = new Date(), today = isoDate(now), in7 = isoDate(addDays(now, 7));
     const hour = now.getHours();
     const greet = hour < 11 ? "Guten Morgen" : hour < 18 ? "Hallo" : "Guten Abend";
-    const contacts = [...S.contacts.values()];
-    const overdue = contacts.filter((c) => c.nextDate && c.nextDate < today);
-    const dueToday = contacts.filter((c) => c.nextDate === today);
-    const upcoming = contacts.filter((c) => c.nextDate && c.nextDate > today && c.nextDate <= in7);
-    const steps = [...overdue, ...dueToday, ...upcoming].sort((a, b) => a.nextDate.localeCompare(b.nextDate)).slice(0, 8);
-    const tomorrow = addDays(new Date(today + "T00:00:00"), 1);
-    const todayStart = new Date(today + "T00:00:00");
-    const todayItems = [];
+    const todayStart = new Date(today + "T00:00:00"), tomorrow = addDays(todayStart, 1);
+    const contacts = [...S.contacts.values()].filter((c) => c.nextDate);
+    const byDate = (a, b) => a.nextDate.localeCompare(b.nextDate) || COLL.compare(a.name || "", b.name || "");
+    const groups = {
+      due: contacts.filter((c) => c.nextDate <= today).sort(byDate),
+      week: contacts.filter((c) => c.nextDate > today && c.nextDate <= in7).sort(byDate),
+      later: contacts.filter((c) => c.nextDate > in7).sort(byDate),
+    };
+    const lateCount = groups.due.filter((c) => c.nextDate < today).length;
+    const steps = groups[H.tab] || groups.due;
+    const shown = steps.slice(0, 4);
+    const loading = `<p class="wb-empty">Wird geladen …</p>`;
+
+    // Zeitstrahl: Arbeitszeit, bei Terminen außerhalb automatisch erweitert
+    const items = [];
     if (C.loaded) {
-      for (const b of C.bookings) { const s = new Date(b.start_at); if (s >= todayStart && s < tomorrow) todayItems.push({ s, e: new Date(b.end_at), kind: "booking", title: b.title, sub: b.owner === S.me.id ? "mit " + b.booker_name : "bei " + b.owner_name }); }
-      for (const x of extEvents()) { if (x.s < tomorrow && x.e > todayStart) todayItems.push({ s: x.s, e: x.e, allDay: x.allDay, kind: "booking", title: x.title, sub: (x.location ? x.location + " · " : "") + "Kalender „" + x.cal + "“" }); }
-      for (const t of C.todos) { if (!t.planned_start || t.done) continue; const s = new Date(t.planned_start); if (s >= todayStart && s < tomorrow) todayItems.push({ s, e: new Date(s.getTime() + t.duration_min * 60000), kind: "todo", title: t.title, sub: "To-Do", id: t.id }); }
-      todayItems.sort((a, b) => a.s - b.s);
+      for (const x of eventsBetween(todayStart, tomorrow)) items.push(x);
+      for (const t of C.todos) { if (!t.planned_start || t.done) continue; const s = new Date(t.planned_start); if (s >= todayStart && s < tomorrow) items.push({ s, e: new Date(s.getTime() + t.duration_min * 60000), kind: "todo", title: t.title }); }
     }
-    const nextBookings = C.bookings.filter((b) => new Date(b.start_at) >= tomorrow).map((b) => ({ s: new Date(b.start_at), title: b.title, sub: b.owner === S.me.id ? "mit " + b.booker_name : "bei " + b.owner_name }))
-      .concat(extEvents().filter((x) => x.s >= tomorrow).map((x) => ({ s: x.s, allDay: x.allDay, title: x.title, sub: x.location || "Kalender „" + x.cal + "“" })))
-      .sort((a, b) => a.s - b.s).slice(0, 6);
-    const openTodos = C.todos.filter((t) => !t.done).sort((a, b) => a.priority - b.priority || (a.due || "9999").localeCompare(b.due || "9999")).slice(0, 6);
-    const openCount = C.todos.filter((t) => !t.done).length;
-    const unplanned = C.todos.filter((t) => !t.done && (!t.planned_start || new Date(t.planned_start) < now)).length;
-    const weekEnd = addDays(mondayOf(now), 7);
-    const weekBookings = C.bookings.filter((b) => new Date(b.start_at) >= now && new Date(b.start_at) < weekEnd).length + extEvents().filter((x) => x.s >= now && x.s < weekEnd).length;
-    const people = C.loaded ? sharedWithMe() : [];
-    const stepRow = (c) => `<button type="button" class="hrow" data-hopen="${c._id}"><span class="hdate ${c.nextDate < today ? "late" : c.nextDate === today ? "now" : ""}">${c.nextDate < today ? "überfällig" : c.nextDate === today ? "heute" : fmtDate(c.nextDate)}</span><span class="hmain"><strong>${esc(c.name || "Ohne Namen")}</strong><span>${esc(c.nextStep || "Next Step")}</span></span></button>`;
-    const tile = (n, label, tone, act) => `<button type="button" class="htile ${tone || ""}" ${act}><strong>${n}</strong><span>${label}</span></button>`;
-    v.innerHTML = `
-      <div class="hhead"><div><h2 class="page-title">${greet}, ${esc((displayName(S.me) || "").split(" ")[0])}</h2>
-        <p class="hint">${now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p></div>
-        <div class="hquick"><button class="btn primary" type="button" data-hact="contact">+ Kontakt</button><button class="btn" type="button" data-hact="todo">+ To-Do</button><button class="btn" type="button" data-hact="plan">Woche planen</button></div></div>
-      <div class="htiles">
-        ${tile(overdue.length + dueToday.length, "Next Steps fällig", overdue.length ? "warn" : "", 'data-hgo="due"')}
-        ${tile(C.loaded ? todayItems.length : "–", "heute geplant", "", 'data-hgo="woche"')}
-        ${tile(C.loaded ? weekBookings : "–", weekBookings === 1 ? "Termin diese Woche" : "Termine diese Woche", "", 'data-hgo="woche"')}
-        ${tile(C.loaded ? openCount : "–", "offene To-Dos", unplanned ? "warn" : "", 'data-hgo="todos"')}
-        ${LISTS.map((l) => tile(inList(l.id).length, l.label, "list", `data-hlist="${l.id}" style="--c: var(--l-${l.id})"`)).join("")}
+    const timed = items.filter((x) => !x.allDay);
+    const allDay = items.filter((x) => x.allDay);
+    const wh = dayHours();
+    let h0 = wh.start, h1 = wh.end;
+    for (const x of timed) { h0 = Math.min(h0, Math.max(0, x.s < todayStart ? 0 : x.s.getHours())); h1 = Math.max(h1, Math.min(24, x.e >= tomorrow ? 24 : Math.ceil(x.e.getHours() + x.e.getMinutes() / 60))); }
+    const span = (h1 - h0) * 60;
+    const pos = (d) => Math.max(0, Math.min(100, ((d < todayStart ? 0 : d >= tomorrow ? 1440 : d.getHours() * 60 + d.getMinutes()) - h0 * 60) / span * 100));
+    const step = h1 - h0 > 12 ? 3 : 2;
+    const ticks = []; for (let h = h0; h <= h1; h += step) ticks.push(h); if (ticks[ticks.length - 1] !== h1) ticks.push(h1);
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    const hourOpts = (from, to, sel) => Array.from({ length: to - from + 1 }, (_, i) => from + i).map((h) => `<option value="${h}" ${h === sel ? "selected" : ""}>${h} Uhr</option>`).join("");
+    const timeline = `<section class="wb-card wb-tl" aria-label="Heute">
+      <div class="wb-tl-h"><span>Heute, ${h0} bis ${h1} Uhr</span>
+        ${H.tlEdit ? `<span class="wb-tl-set">Arbeitszeit <select id="tlStart" aria-label="Beginn">${hourOpts(0, 23, wh.start)}</select> bis <select id="tlEnd" aria-label="Ende">${hourOpts(1, 24, wh.end)}</select><button class="btn primary" type="button" data-hact="tlsave">Speichern</button><button class="btn ghost" type="button" data-hact="tledit">Abbrechen</button></span>`
+          : `<span>${C.loaded ? (() => { const a = timed.filter((x) => x.kind !== "todo").length, b = timed.length - a; return `${a} ${a === 1 ? "Termin" : "Termine"} · ${b} ${b === 1 ? "To-Do" : "To-Dos"} eingeplant · `; })() : ""}<button class="linkbtn" type="button" data-hact="tledit">Arbeitszeit anpassen</button></span>`}</div>
+      <div class="wb-track">
+        ${timed.map((x) => `<span class="wb-blk ${x.kind}" style="left:${pos(x.s)}%;width:${Math.max(0.6, pos(x.e) - pos(x.s))}%" title="${esc(hm(x.s) + "–" + hm(x.e) + " " + x.title)}">${esc(hm(x.s) + " " + x.title)}</span>`).join("")}
+        ${nowMin >= h0 * 60 && nowMin <= h1 * 60 ? `<span class="wb-now" style="left:${pos(now)}%"></span>` : ""}
       </div>
-      <div class="hgrid">
-        <section class="hcard"><div class="hcard-h"><h3>Heute</h3><button class="linkbtn" type="button" data-hgo="woche">Zur Woche</button></div>
-          ${!C.loaded ? `<p class="hint">Wird geladen …</p>` : todayItems.length ? todayItems.map((x) => `<div class="hrow static ${x.kind}"><span class="hdate">${x.allDay ? "ganztägig" : hm(x.s)}</span><span class="hmain"><strong>${esc(x.title)}</strong><span>${esc(x.sub)}${x.allDay ? "" : " · bis " + hm(x.e)}</span></span>${x.kind === "todo" ? `<input type="checkbox" data-htdone="${x.id}" aria-label="Erledigt">` : ""}</div>`).join("") : `<p class="hint">Heute ist nichts geplant.${unplanned ? ` Du hast ${unplanned} ${unplanned === 1 ? "offenes To-Do" : "offene To-Dos"}, die du einplanen kannst.` : ""}</p>`}
-        </section>
-        <section class="hcard"><div class="hcard-h"><h3>Fällige Next Steps</h3><button class="linkbtn" type="button" data-hgo="due">Alle anzeigen</button></div>
-          ${steps.length ? steps.map(stepRow).join("") : `<p class="hint">In den nächsten 7 Tagen ist kein Next Step fällig.</p>`}
-        </section>
-        ${(() => {
-          const ts = C.teamSteps || [];
-          const sharers = (C.nsShare || []).filter((a) => a.viewer === S.me.id).length;
-          if (!ts.length && !sharers) return "";
-          const shown = ts.slice(0, 10);
-          return `<section class="hcard"><div class="hcard-h"><h3>Next Steps im Team</h3><span class="hint">${sharers} ${sharers === 1 ? "Person teilt" : "Personen teilen"}</span></div>
-            ${shown.length ? shown.map((x) => `<div class="hrow static"><span class="hdate ${x.next_date < today ? "late" : x.next_date === today ? "now" : ""}">${x.next_date < today ? "überfällig" : x.next_date === today ? "heute" : fmtDate(x.next_date)}</span><span class="hmain"><strong>${esc(x.contact_name || "Ohne Namen")}</strong><span>${esc(x.owner_name)} · ${esc(x.next_step || "Next Step")}</span></span></div>`).join("") : `<p class="hint">Im Team ist in den nächsten 7 Tagen kein Next Step fällig.</p>`}
-            ${ts.length > shown.length ? `<p class="hint">+${ts.length - shown.length} weitere</p>` : ""}
-          </section>`;
-        })()}
-        <section class="hcard"><div class="hcard-h"><h3>Offene To-Dos</h3><button class="linkbtn" type="button" data-hgo="todos">Alle anzeigen</button></div>
-          ${!C.loaded ? `<p class="hint">Wird geladen …</p>` : openTodos.length ? openTodos.map((t) => `<div class="hrow static"><input type="checkbox" data-htdone="${t.id}" aria-label="Erledigt"><span class="hmain"><strong>${esc(t.title)}</strong><span>${t.priority === 1 ? "Hohe Priorität · " : ""}${t.planned_start && new Date(t.planned_start) > now ? `${dayLabel(new Date(t.planned_start))} ${hm(new Date(t.planned_start))}` : "nicht eingeplant"}${t.due ? " · fällig " + fmtDate(t.due) : ""}</span></span></div>`).join("") : `<p class="hint">Keine offenen To-Dos.</p>`}
-          ${unplanned ? `<button class="btn" type="button" data-hact="plan">${unplanned} ${unplanned === 1 ? "To-Do" : "To-Dos"} automatisch einplanen</button>` : ""}
-        </section>
-        <section class="hcard"><div class="hcard-h"><h3>Nächste Termine</h3><button class="linkbtn" type="button" data-hgo="buchen">Zeit buchen</button></div>
-          ${!C.loaded ? `<p class="hint">Wird geladen …</p>` : nextBookings.length ? nextBookings.map((b) => `<div class="hrow static booking"><span class="hdate">${dayLabel(b.s)}</span><span class="hmain"><strong>${esc(b.title)}</strong><span>${b.allDay ? "ganztägig" : hm(b.s) + " Uhr"} · ${esc(b.sub)}</span></span></div>`).join("") : `<p class="hint">Keine weiteren Termine.</p>`}
-          ${people.length ? `<div class="hwho">${people.map((p) => { const d = C.previews[p.id]; const n = d && d.slots[0]; return `<button type="button" class="hwho-i" data-hbook="${p.id}"><strong>${esc(p.name)} hat Zeit</strong><span>${!d ? "…" : n ? `${dayLabel(n.s)}, ${hm(n.s)} Uhr` : "gerade nichts frei"}</span></button>`; }).join("")}</div>` : ""}
-        </section>
-        ${(() => {
-          const limit = plusMonths(today, 1);
-          const svc = contacts.filter((c) => c.lists.includes("kunden") && serviceNext(c) && serviceNext(c) <= limit).sort((a, b) => serviceNext(a).localeCompare(serviceNext(b))).slice(0, 6);
-          const cnt = contacts.filter((c) => c.lists.includes("kunden") && serviceNext(c)).length;
-          if (!cnt) return "";
-          return `<section class="hcard"><div class="hcard-h"><h3>Service-Termine</h3><button class="linkbtn" type="button" data-hlist="kunden">Kundenliste</button></div>
-            ${svc.length ? svc.map((c) => `<button type="button" class="hrow" data-hopen="${c._id}"><span class="hdate ${serviceNext(c) < today ? "late" : "now"}">${serviceNext(c) < today ? "überfällig" : fmtDate(serviceNext(c))}</span><span class="hmain"><strong>${esc(c.name || "Ohne Namen")}</strong><span>Letzter Service ${(c.custom || {})._service ? fmtDate((c.custom || {})._service) : "–"}</span></span></button>`).join("") : `<p class="hint">In den nächsten 4 Wochen steht kein Service an.</p>`}
-          </section>`;
-        })()}
+      <div class="wb-axis">${ticks.map((h) => `<span style="left:${(h - h0) / (h1 - h0) * 100}%">${h}</span>`).join("")}</div>
+      ${allDay.length ? `<span class="wb-allday">Ganztägig: ${allDay.map((x) => esc(x.title)).join(", ")}</span>` : ""}
+      ${C.loaded && !timed.length ? `<span class="wb-allday">Heute ist noch nichts geplant.</span>` : ""}
+    </section>`;
+
+    // Termine der Woche, Montag bis Sonntag
+    const mon = mondayOf(now);
+    const week = Array.from({ length: 7 }, (_, i) => addDays(mon, i));
+    const weekEv = C.loaded ? eventsBetween(mon, addDays(mon, 7)) : [];
+    const weekCard = `<section class="wb-card"><div class="wb-ch"><h3>Termine der Woche</h3>
+        <span class="wb-legend"><span><i style="--c: var(--l-kunden)"></i>Kalender</span><span><i style="--c: var(--accent)"></i>Buchung</span><button class="linkbtn" type="button" data-hgo="woche">Zum Kalender</button><button class="linkbtn" type="button" data-hgo="buchen">Zeit buchen</button></span></div>
+      <div class="wb-week-sc"><div class="wb-week">${week.map((d) => {
+        const de = isoDate(d), next = addDays(d, 1);
+        const ev = weekEv.filter((x) => x.s < next && x.e > d);
+        const cls = [de === today ? "today" : de < today ? "past" : "", weekday(d) >= 6 ? "we" : ""].join(" ");
+        return `<div class="wb-day ${cls}"><h4>${DAYS[weekday(d) - 1]} ${d.getDate()}.${de === today ? " heute" : ""}<small>${C.loaded ? ev.length : ""}</small></h4>
+          ${!C.loaded ? "" : ev.length ? ev.map((x) => `<div class="wb-ev ${x.kind}" title="${esc(x.sub)}"><b>${x.allDay ? "ganztägig" : hm(x.s)}</b><span>${esc(x.title)}</span></div>`).join("") : `<span class="none">${weekday(d) >= 6 ? "frei" : "keine Termine"}</span>`}</div>`;
+      }).join("")}</div></div></section>`;
+
+    // Next Steps kompakt
+    const nsRow = (c) => {
+      const l = stepLabel(c.nextDate, today), open = H.resched === c._id;
+      return `<div class="wb-row ${open ? "open" : ""}"><span class="wb-dt ${l.cls}">${l.txt}</span>
+        <button type="button" class="wb-tx" data-hopen="${c._id}"><strong>${esc(c.name || "Ohne Namen")}</strong><span>${esc(c.nextStep || "Next Step")}</span></button>
+        ${S.canEdit ? `<span class="wb-ic"><button type="button" class="ok" data-hdone="${c._id}" title="Erledigt" aria-label="Erledigt">✓</button><button type="button" data-hmove="${c._id}" title="Verschieben" aria-label="Verschieben" aria-expanded="${open}">↻</button></span>` : ""}</div>
+        ${open ? `<div class="wb-resched"><small>Verschieben auf</small><button type="button" data-hto="1" data-id="${c._id}">Morgen</button><button type="button" data-hto="mon" data-id="${c._id}">Montag</button><button type="button" data-hto="7" data-id="${c._id}">In 1 Woche</button><input type="date" data-hdate="${c._id}" aria-label="Datum wählen" value="${c.nextDate}"></div>` : ""}`;
+    };
+    const tabBtn = (id, label, n, late) => `<button type="button" data-htab="${id}" aria-pressed="${H.tab === id}">${label}<b class="${late ? "late" : ""}">${n}</b></button>`;
+    const nsCard = `<section class="wb-card"><div class="wb-ch"><h3>Next Steps</h3><button class="linkbtn" type="button" data-hgo="due">Alle in der Liste</button></div>
+      <div class="wb-seg">${tabBtn("due", "Fällig", groups.due.length, lateCount)}${tabBtn("week", "Woche", groups.week.length)}${tabBtn("later", "Später", groups.later.length)}</div>
+      ${!S.loadedContacts ? loading : shown.length ? shown.map(nsRow).join("") : `<p class="wb-empty">${H.tab === "due" ? "Nichts fällig. Gut gemacht!" : H.tab === "week" ? "In den nächsten 7 Tagen steht nichts an." : "Keine späteren Next Steps."}</p>`}
+      ${steps.length > shown.length ? `<button class="wb-more" type="button" data-hgo="due">+${steps.length - shown.length} weitere ${H.tab === "due" ? "fällig" : ""}</button>` : ""}
+    </section>`;
+
+    // Offene To-Dos
+    const open = C.todos.filter((t) => !t.done).sort((a, b) => a.priority - b.priority || (a.due || "9999").localeCompare(b.due || "9999"));
+    const unplanned = open.filter((t) => !t.planned_start || new Date(t.planned_start) < now).length;
+    const todoCard = `<section class="wb-card"><div class="wb-ch"><h3>Offene To-Dos</h3>${unplanned ? `<button class="linkbtn" type="button" data-hact="plan">${unplanned} automatisch einplanen</button>` : `<button class="linkbtn" type="button" data-hgo="todos">Alle</button>`}</div>
+      ${!C.loaded ? loading : open.length ? open.slice(0, 5).map((t) => `<div class="wb-row"><input type="checkbox" data-htdone="${t.id}" aria-label="Erledigt: ${esc(t.title)}"><span class="wb-tx"><strong>${esc(t.title)}</strong><span>${t.priority === 1 ? "Hohe Priorität · " : ""}${t.planned_start && new Date(t.planned_start) > now ? `${new Date(t.planned_start) < tomorrow ? "heute" : dayLabel(new Date(t.planned_start))} ${hm(new Date(t.planned_start))}` : "nicht eingeplant"}${t.due ? " · fällig " + fmtDate(t.due) : ""}</span></span></div>`).join("") : `<p class="wb-empty">Keine offenen To-Dos.</p>`}
+      ${open.length > 5 ? `<button class="wb-more" type="button" data-hgo="todos">+${open.length - 5} weitere</button>` : `<button class="wb-more" type="button" data-hact="todo">+ To-Do anlegen</button>`}
+    </section>`;
+
+    // Next Steps im Team, nach Personen
+    const ts = C.teamSteps || [];
+    const sharers = (C.nsShare || []).filter((a) => a.viewer === S.me.id).length;
+    let teamCard = "";
+    if (ts.length || sharers) {
+      const people = new Map();
+      for (const x of ts) { if (!people.has(x.owner)) people.set(x.owner, { name: x.owner_name || "Unbekannt", rows: [] }); people.get(x.owner).rows.push(x); }
+      const list = [...people.entries()].sort((a, b) => COLL.compare(a[1].name, b[1].name));
+      teamCard = `<section class="wb-card"><div class="wb-ch"><h3>Next Steps im Team</h3><span class="hint">${list.length || sharers} ${(list.length || sharers) === 1 ? "Person" : "Personen"}</span></div>
+        ${list.length ? list.map(([id, p]) => {
+          const late = p.rows.filter((x) => x.next_date < today).length, isOpen = H.open.has(id);
+          return `<button type="button" class="wb-person" data-hperson="${id}" aria-expanded="${isOpen}"><span class="wb-av">${esc((p.name.trim()[0] || "?").toUpperCase())}</span><strong>${esc(p.name)}</strong>${late ? `<span class="wb-badge late">${late} überfällig</span>` : ""}${p.rows.length - late ? `<span class="wb-badge">${p.rows.length - late}</span>` : ""}<span class="wb-chev">${isOpen ? "▾" : "▸"}</span></button>
+            ${isOpen ? p.rows.map((x) => { const l = stepLabel(x.next_date, today); return `<div class="wb-trow"><span class="wb-dt ${l.cls}">${l.txt}</span><span class="wb-tx"><strong>${esc(x.contact_name || "Ohne Namen")}</strong><span>${esc(x.next_step || "Next Step")}</span></span></div>`; }).join("") : ""}`;
+        }).join("") : `<p class="wb-empty">Im Team ist in den nächsten 7 Tagen kein Next Step fällig.</p>`}
+      </section>`;
+    }
+
+    // Service-Termine nur, wenn in den nächsten 4 Wochen einer ansteht
+    const limit = plusMonths(today, 1);
+    const svc = [...S.contacts.values()].filter((c) => c.lists.includes("kunden") && serviceNext(c) && serviceNext(c) <= limit).sort((a, b) => serviceNext(a).localeCompare(serviceNext(b)));
+    const svcCard = svc.length ? `<section class="wb-card"><div class="wb-ch"><h3>Service-Termine</h3><button class="linkbtn" type="button" data-hlist="kunden">Kundenliste</button></div>
+      ${svc.slice(0, 4).map((c) => { const l = stepLabel(serviceNext(c), today); return `<div class="wb-row"><span class="wb-dt ${l.cls}">${l.txt}</span><button type="button" class="wb-tx" data-hopen="${c._id}"><strong>${esc(c.name || "Ohne Namen")}</strong><span>Letzter Service ${(c.custom || {})._service ? fmtDate((c.custom || {})._service) : "–"}</span></button></div>`; }).join("")}
+    </section>` : "";
+
+    const qv = (document.activeElement && document.activeElement.id === "homeQ") ? document.activeElement.value : "";
+    v.innerHTML = `
+      <div class="wb-head"><div><h2 class="page-title">${greet}, ${esc((displayName(S.me) || "").split(" ")[0])}</h2>
+        <p class="hint">${now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p></div>
+        <div class="wb-tools"><input type="search" id="homeQ" placeholder="Kontakt suchen …" aria-label="Kontakt suchen" value="${esc(qv)}">
+          <button class="btn primary" type="button" data-hact="menu" aria-expanded="${H.menu}">+ Neu</button>
+          ${H.menu ? `<div class="wb-menu" role="menu"><button type="button" role="menuitem" data-hact="contact">Kontakt</button><button type="button" role="menuitem" data-hact="todo">To-Do</button><button type="button" role="menuitem" data-hgo="buchen">Termin buchen</button><button type="button" role="menuitem" data-hact="plan">Woche planen</button></div>` : ""}</div></div>
+      ${timeline}
+      ${weekCard}
+      <div class="wb-grid ${teamCard ? "" : "two"}">
+        <div class="wb-col">${nsCard}${svcCard}</div>
+        ${todoCard}
+        ${teamCard}
       </div>`;
+    if (qv) { const q = $("homeQ"); q.focus(); q.setSelectionRange(qv.length, qv.length); }
+  }
+  function moveStep(id, iso) {
+    const c = S.contacts.get(id); if (!c) return;
+    const before = c.nextDate;
+    c.nextDate = iso; H.resched = null; saveContact(id, 0); renderAll();
+    toast(`${c.name || "Next Step"}: verschoben auf ${fmtDate(iso)}.`, () => { c.nextDate = before; saveContact(id, 0); renderAll(); });
   }
   $("homeView").addEventListener("click", async (e) => {
-    const t = e.target.closest("button"); if (!t) return;
+    const t = e.target.closest("button"); if (!t) { if (H.menu && !e.target.closest(".wb-menu")) { H.menu = false; renderHome(); } return; }
     const d = t.dataset;
+    const wasMenu = H.menu;
+    if (d.hact !== "menu") H.menu = false;
     if (d.hopen) { S.view = "list"; const c = S.contacts.get(d.hopen); if (c && !c.lists.includes(S.list)) S.list = c.lists[0]; renderAll(); openPanel("contact", d.hopen); return; }
     if (d.hlist) { S.view = "list"; S.list = d.hlist; S.dueOnly = false; renderAll(); return; }
     if (d.hgo === "due") { S.view = "list"; S.list = "haupt"; S.sort = "next"; $("sort").value = "next"; renderAll(); return; }
     if (d.hgo) return openCal(d.hgo);
-    if (d.hbook) { C.target = d.hbook; C.pick = null; return openCal("buchen"); }
+    if (d.htab) { H.tab = d.htab; H.resched = null; remember(); renderHome(); return; }
+    if (d.hperson) { H.open.has(d.hperson) ? H.open.delete(d.hperson) : H.open.add(d.hperson); remember(); renderHome(); return; }
+    if (d.hmove) { H.resched = H.resched === d.hmove ? null : d.hmove; renderHome(); return; }
+    if (d.hto) {
+      const base = new Date(); base.setHours(12, 0, 0, 0);
+      const to = d.hto === "mon" ? addDays(base, ((8 - base.getDay()) % 7) || 7) : addDays(base, Number(d.hto));
+      return moveStep(d.id, isoDate(to));
+    }
+    if (d.hdone) {
+      const c = S.contacts.get(d.hdone); if (!c) return;
+      const before = { nextStep: c.nextStep, nextDate: c.nextDate };
+      c.nextStep = ""; c.nextDate = ""; if (H.resched === d.hdone) H.resched = null;
+      saveContact(d.hdone, 0); renderAll();
+      toast(`„${before.nextStep || "Next Step"}“ bei ${c.name || "Kontakt"} erledigt.`, () => { Object.assign(c, before); saveContact(d.hdone, 0); renderAll(); });
+      return;
+    }
+    if (d.hact === "menu") { H.menu = !H.menu; renderHome(); return; }
+    if (d.hact === "tledit") { H.tlEdit = !H.tlEdit; renderHome(); return; }
+    if (d.hact === "tlsave") {
+      const s = Number($("tlStart").value), en = Number($("tlEnd").value);
+      if (en <= s) { toast("Das Ende muss nach dem Beginn liegen."); return; }
+      H.tlEdit = false; renderHome(); await saveDayHours({ start: s, end: en }); renderHome(); return;
+    }
     if (d.hact === "contact") { S.view = "list"; addContact(); return; }
     if (d.hact === "todo") { await openCal("todos"); $("tdTitle")?.focus(); return; }
     if (d.hact === "plan") { await autoPlan(); if (S.view !== "home") return; renderAll(); return; }
+    if (wasMenu) renderHome();
   });
   $("homeView").addEventListener("change", async (e) => {
+    if (e.target.dataset.hdate) { if (e.target.value) moveStep(e.target.dataset.hdate, e.target.value); return; }
     const id = e.target.dataset.htdone; if (!id) return;
     const x = C.todos.find((y) => y.id === id); if (!x) return;
     x.done = true; renderAll();
     const { error } = await S.sb.from("todos").update({ done: true }).eq("id", id);
     if (error) { x.done = false; renderAll(); toast(error.message); } else toast(`„${x.title}“ erledigt.`, async () => { x.done = false; renderAll(); await S.sb.from("todos").update({ done: false }).eq("id", id); });
+  });
+  $("homeView").addEventListener("keydown", (e) => {
+    if (e.target.id !== "homeQ" || e.key !== "Enter") return;
+    S.view = "list"; S.list = "haupt"; S.q = e.target.value; $("q").value = S.q; renderAll(); $("q").focus();
   });
 
   // ---------- Hinweise ----------

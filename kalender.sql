@@ -153,3 +153,6 @@ exception when duplicate_object then null; end $$;
 do $$ begin
   alter publication supabase_realtime add table public.todos;
 exception when duplicate_object then null; end $$;
+
+-- Arbeitszeit für den Zeitstrahl auf der Startseite (z. B. {"start": 7, "end": 21}). Ohne diese Spalte merkt sich die App die Zeit nur pro Gerät.
+alter table public.cal_settings add column if not exists day_hours jsonb;
