@@ -1298,21 +1298,33 @@ window.KONTAKT_CONFIG = {
     return parts.filter((p) => p.e - p.s >= 5 * 60000);
   }
   function ceilQuarter(d) { const x = new Date(d); const m = x.getMinutes(); x.setSeconds(0, 0); if (m % 15) x.setMinutes(m + 15 - (m % 15)); return x; }
-  function freeSlots(settings, busy, days) {
+  // Mögliche Startzeiten (alle 30 Minuten) für einen Termin der gewünschten Dauer. Die Dauer wählt, wer bucht.
+  function freeSlots(settings, busy, days, minutes = 60) {
     const out = []; const now = new Date(Date.now() + 15 * 60000);
     const start = new Date(); start.setHours(0, 0, 0, 0);
-    const len = (settings.slot_min || 60) * 60000;
+    const len = minutes * 60000, step = 30 * 60000;
     for (let i = 0; i < days; i++) {
       const d = addDays(start, i);
       if ((settings.blocked || []).includes(isoDate(d))) continue;
       for (const w of windowsOn(settings.avail, d)) {
-        for (let t = w.s.getTime(); t + len <= w.e.getTime(); t += len) {
+        for (let t = w.s.getTime(); t + len <= w.e.getTime(); t += step) {
           const slot = { s: new Date(t), e: new Date(t + len) };
           if (slot.s < now) continue;
           if (busy.some((b) => overlaps(slot, b))) continue;
           out.push(slot);
         }
       }
+    }
+    return out;
+  }
+  // Freie, buchbare Zeiträume eines Tages (Wochenvorlage minus belegte Zeiten).
+  function freeRanges(settings, busy, d) {
+    if ((settings.blocked || []).includes(isoDate(d))) return [];
+    const now = new Date();
+    const out = [];
+    for (const w of windowsOn(settings.avail, d)) {
+      if (w.e <= now) continue;
+      out.push(...subtract({ s: w.s < now ? ceilQuarter(now) : w.s, e: w.e }, busy).filter((p) => p.e - p.s >= 30 * 60000));
     }
     return out;
   }
@@ -1584,13 +1596,14 @@ window.KONTAKT_CONFIG = {
     const { s: ws, e: we } = calRange(), now = new Date();
     const nDays = Math.round((we - ws) / 86400000);
     const busy = myBusy();
-    const allSlots = freeSlots(C.settings, busy, 7 * 12);
+    const rangesOn = (d) => freeRanges(C.settings, busy, d);
     const openTodos = C.todos.filter((t) => !t.done);
     const unplanned = openTodos.filter((t) => !t.planned_start || new Date(t.planned_start) < now);
     const rBookings = C.bookings.filter((b) => new Date(b.start_at) >= ws && new Date(b.start_at) < we);
     const rExt = extEvents().filter((x) => x.s >= ws && x.s < we);
     const rTodos = C.todos.filter((t) => t.planned_start && new Date(t.planned_start) >= ws && new Date(t.planned_start) < we);
-    const rSlots = allSlots.filter((s) => s.s >= ws && s.s < we);
+    let freeMin = 0;
+    for (let i = 0; i < nDays; i++) for (const r of rangesOn(addDays(ws, i))) freeMin += (r.e - r.s) / 60000;
     let focusFree = 0;
     for (let i = 0; i < nDays; i++) {
       const d = addDays(ws, i);
@@ -1610,7 +1623,8 @@ window.KONTAKT_CONFIG = {
       for (let i = 0; i < nDays; i++) {
         const d = addDays(ws, i), dn = addDays(d, 1);
         const items = dayItems(d, dn);
-        const free = rSlots.filter((s) => s.s >= d && s.s < dn).length;
+        const freeH = rangesOn(d).reduce((a, r) => a + (r.e - r.s) / 3600000, 0);
+        const free = freeH ? (Math.round(freeH * 2) / 2).toLocaleString("de-DE") + " Std." : "";
         const isToday = isoDate(d) === isoDate(now), blocked = C.settings.blocked.includes(isoDate(d));
         const shown = items.slice(0, 3);
         cells.push(`<button type="button" class="mcell ${isToday ? "today" : ""} ${d < now && !isToday ? "past" : ""}" data-cday="${isoDate(d)}" aria-label="${DAYS_LONG[weekday(d) - 1]}, ${d.toLocaleDateString("de-DE")}: ${items.length} Einträge">
@@ -1629,7 +1643,7 @@ window.KONTAKT_CONFIG = {
         const d = addDays(ws, i), dn = addDays(d, 1);
         const items = dayItems(d, dn);
         const blocked = C.settings.blocked.includes(isoDate(d));
-        const ds = rSlots.filter((s) => s.s >= d && s.s < dn);
+        const ds = rangesOn(d);
         const focus = blocked ? [] : windowsOn(C.settings.focus, d);
         const isToday = isoDate(d) === isoDate(now);
         days.push(`<section class="cday ${isToday ? "today" : ""} ${d < now && !isToday ? "past" : ""}">
@@ -1637,7 +1651,7 @@ window.KONTAKT_CONFIG = {
           ${blocked ? `<p class="hint">Freier Tag</p>` : ""}
           ${items.map((x) => x.html).join("")}
           ${focus.length ? `<p class="cfoot">To-Do-Zeit ${focus.map((w) => `${hm(w.s)}–${hm(w.e)}`).join(", ")}</p>` : ""}
-          ${ds.length ? `<p class="cfoot free">Buchbar: ${ds.map((s) => hm(s.s)).join(", ")}</p>` : ""}
+          ${ds.length ? `<p class="cfoot free">Buchbar: ${ds.map((r) => `${hm(r.s)}–${hm(r.e)}`).join(", ")}</p>` : ""}
           ${!items.length && !focus.length && !ds.length && !blocked ? `<p class="hint">Nichts geplant</p>` : ""}
         </section>`);
       }
@@ -1660,7 +1674,7 @@ window.KONTAKT_CONFIG = {
       <div class="cal-bar"><div class="weeknav"><button class="btn" type="button" data-cweek="-1" aria-label="${unit[0]}">‹</button><strong>${label}</strong><button class="btn" type="button" data-cweek="1" aria-label="${unit[1]}">›</button>${isNow ? "" : `<button class="btn ghost" type="button" data-cweek="0">Heute</button>`}</div>
         <span class="spacer"></span>${C.exts && C.exts.length ? `<button class="btn" type="button" data-cact="extsync" ${C.extSyncing ? "disabled" : ""} title="iPhone-Kalender jetzt abgleichen">${C.extSyncing ? "Wird aktualisiert …" : "Aktualisieren"}</button>` : ""}<button class="btn" type="button" data-cact="newev" aria-expanded="${!!C.newEv}">+ Termin</button></div>
       ${C.newEv ? newEventForm(ws) : ""}
-      <div class="cal-sum"><span><strong>${rSlots.length}</strong> buchbare Termine frei</span><span><strong>${(Math.round(focusFree / 6) / 10).toLocaleString("de-DE")} Std.</strong> To-Do-Zeit frei</span><span><strong>${rBookings.length + rExt.length}</strong> ${rBookings.length + rExt.length === 1 ? "Termin" : "Termine"}</span><span><strong>${rTodos.filter((t) => !t.done).length}</strong> To-Dos eingeplant</span></div>
+      <div class="cal-sum"><span><strong>${(Math.round(freeMin / 30) / 2).toLocaleString("de-DE")} Std.</strong> buchbar frei</span><span><strong>${(Math.round(focusFree / 6) / 10).toLocaleString("de-DE")} Std.</strong> To-Do-Zeit frei</span><span><strong>${rBookings.length + rExt.length}</strong> ${rBookings.length + rExt.length === 1 ? "Termin" : "Termine"}</span><span><strong>${rTodos.filter((t) => !t.done).length}</strong> To-Dos eingeplant</span></div>
       ${tips.length ? `<div class="tips">${tips.map((t) => `<p>${t}</p>`).join("")}</div>` : ""}
       ${grid}`;
   }
@@ -1713,11 +1727,13 @@ window.KONTAKT_CONFIG = {
       const data = C.previews[C.target];
       if (p && data) {
         const byDay = {};
-        for (const s of data.slots) (byDay[isoDate(s.s)] = byDay[isoDate(s.s)] || []).push(s);
+        const dur = C.bookDur || 60;
+        for (const s of freeSlots(data.settings, data.busy, data.settings.weeks * 7, dur)) (byDay[isoDate(s.s)] = byDay[isoDate(s.s)] || []).push(s);
         const keys = Object.keys(byDay).sort();
         detail = `<div class="book-detail"><div class="cal-bar"><h3 class="section-title">${esc(p.name)} hat Zeit</h3><span class="spacer"></span><button class="btn ghost" type="button" data-btarget="">Schließen</button></div>
+          <div class="field"><span>Wie lange dauert der Termin?</span><div class="seg" role="group" aria-label="Dauer">${[[30, "30 Min."], [45, "45 Min."], [60, "1 Std."], [90, "1,5 Std."], [120, "2 Std."]].map(([m, l]) => `<button type="button" data-bdur="${m}" aria-pressed="${dur === m}">${l}</button>`).join("")}</div></div>
           ${keys.length ? keys.map((k) => `<div class="bday"><strong>${dayLabel(new Date(k + "T12:00:00"))}</strong><div class="slots">${byDay[k].map((s) => `<button type="button" class="slot ${C.pick && C.pick.s.getTime() === s.s.getTime() ? "on" : ""}" data-slot="${s.s.getTime()}|${s.e.getTime()}">${hm(s.s)}</button>`).join("")}</div></div>`).join("")
-            : `<p class="hint">${esc(p.name)} hat in den nächsten ${data.settings.weeks} Wochen keine freien Zeiten eingetragen.</p>`}
+            : `<p class="hint">${esc(p.name)} hat in den nächsten ${data.settings.weeks} Wochen keine freie Zeit für ${dur < 60 ? dur + " Minuten" : String(dur / 60).replace(".", ",") + (dur === 60 ? " Stunde" : " Stunden")}.</p>`}
           ${C.pick ? `<form id="bookForm" class="book-form"><p><strong>${DAYS_LONG[weekday(C.pick.s) - 1]}, ${C.pick.s.toLocaleDateString("de-DE")} · ${hm(C.pick.s)}–${hm(C.pick.e)}</strong> bei ${esc(p.name)}</p>
             <label class="field"><span>Worum geht es?</span><input id="bkTitle" type="text" value="Termin" required></label>
             <label class="field"><span>Notiz (optional)</span><input id="bkNote" type="text" placeholder="z. B. Kundentermin vorbereiten"></label>
@@ -1725,10 +1741,10 @@ window.KONTAKT_CONFIG = {
         </div>`;
       }
     }
-    return `<p class="hint">Hier siehst du, wann Personen Zeit haben, die ihren Kalender für dich freigegeben haben. Tippe auf eine Uhrzeit, um sie zu buchen. Deinen eigenen Kalender gibst du unter „Einstellungen“ frei.</p>
+    return `<p class="hint">Hier siehst du, wann Personen Zeit haben, die ihren Kalender für dich freigegeben haben. Wähle die Dauer und tippe auf eine Uhrzeit, um sie zu buchen. Deinen eigenen Kalender gibst du unter „Einstellungen“ frei.</p>
       ${people.length ? `<div class="team-grid">${people.map((p) => {
         const d = C.previews[p.id]; const next = d && d.slots[0];
-        return `<button type="button" class="team-card ${C.target === p.id ? "sel" : ""}" data-btarget="${p.id}"><h3>${esc(p.name)} hat Zeit</h3><span>${!d ? "wird geladen …" : next ? `Nächster freier Termin: ${dayLabel(next.s)}, ${hm(next.s)} Uhr · ${d.slots.length} frei` : "Gerade keine freien Zeiten"}</span></button>`;
+        return `<button type="button" class="team-card ${C.target === p.id ? "sel" : ""}" data-btarget="${p.id}"><h3>${esc(p.name)} hat Zeit</h3><span>${!d ? "wird geladen …" : next ? `Nächste freie Zeit: ${dayLabel(next.s)}, ${hm(next.s)} Uhr` : "Gerade keine freien Zeiten"}</span></button>`;
       }).join("")}</div>` : `<div class="empty"><h2>Noch niemand hat seinen Kalender für dich freigegeben</h2><p>Sobald jemand dich unter „Einstellungen → Wer darf buchen“ auswählt, erscheint die Person hier.</p></div>`}
       ${detail}
       ${mine.length ? `<h3 class="section-title">Deine Buchungen bei anderen</h3><div class="tlist">${mine.map((b) => `<div class="trow"><span class="ttitle-s"><strong>${esc(b.title)}</strong> bei ${esc(b.owner_name)}</span><span class="pill edit">${dayLabel(new Date(b.start_at))} ${hm(new Date(b.start_at))}</span><button type="button" class="open-btn" data-bics="${b.id}">Kalender</button><button type="button" class="open-btn" data-bdel="${b.id}">Absagen</button></div>`).join("")}</div>` : ""}`;
@@ -1753,8 +1769,8 @@ window.KONTAKT_CONFIG = {
         <section class="set-card"><h3 class="section-title">Wann können andere dich buchen?</h3><p class="hint">Daraus entsteht „${esc(displayName(S.me))} hat Zeit“ für alle, die du unten freigibst.</p>${winEditor("avail")}</section>
         <section class="set-card"><h3 class="section-title">Wann erledigst du deine To-Dos?</h3><p class="hint">In diese Zeit plant „Automatisch einplanen“ deine To-Dos ein.</p>${winEditor("focus")}</section>
         <section class="set-card"><h3 class="section-title">Termine</h3>
-          <div class="grid2"><label class="field"><span>Länge eines Termins</span><select id="setSlot">${[30, 45, 60, 90, 120].map((m) => `<option value="${m}" ${s.slot_min === m ? "selected" : ""}>${m < 60 ? m + " Minuten" : String(m / 60).replace(".", ",") + (m === 60 ? " Stunde" : " Stunden")}</option>`).join("")}</select></label>
-          <label class="field"><span>Buchbar im Voraus</span><select id="setWeeks">${[1, 2, 4, 6, 8, 12].map((w) => `<option value="${w}" ${s.weeks === w ? "selected" : ""}>${w} ${w === 1 ? "Woche" : "Wochen"}</option>`).join("")}</select></label></div>
+          <p class="hint">Wie lange ein Termin dauert, wählt die Person, die bei dir bucht.</p>
+          <div class="grid2"><label class="field"><span>Buchbar im Voraus</span><select id="setWeeks">${[1, 2, 4, 6, 8, 12].map((w) => `<option value="${w}" ${s.weeks === w ? "selected" : ""}>${w} ${w === 1 ? "Woche" : "Wochen"}</option>`).join("")}</select></label></div>
           <h3 class="section-title">Freie Tage</h3><p class="hint">An diesen Tagen bist du nicht buchbar und es werden keine To-Dos eingeplant, zum Beispiel Urlaub.</p>
           <div class="share-row"><input type="date" id="blkDate" aria-label="Freier Tag"><button type="button" class="btn" data-cact="addblock">Hinzufügen</button></div>
           <div class="share-row">${s.blocked.filter((d) => d >= isoDate(new Date())).sort().map((d) => `<span class="share-chip">${new Date(d + "T12:00:00").toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" })}<button type="button" data-blkdel="${d}" aria-label="Entfernen">×</button></span>`).join("") || `<span class="hint">Keine</span>`}</div>
@@ -1913,6 +1929,7 @@ window.KONTAKT_CONFIG = {
       if (C.target) { renderAll(); C.previews[C.target] = await loadTarget(C.target); }
       renderAll(); if (C.target) document.querySelector(".book-detail")?.scrollIntoView({ behavior: "smooth", block: "start" }); return;
     }
+    if (d.bdur) { C.bookDur = Number(d.bdur); C.pick = null; renderAll(); return; }
     if (d.slot) { const [s, en] = d.slot.split("|").map(Number); C.pick = { s: new Date(s), e: new Date(en) }; renderAll(); document.getElementById("bkTitle")?.focus(); return; }
     if (d.preset) {
       const [kind, i] = d.preset.split("|"); const p = PRESETS[Number(i)];
@@ -1959,7 +1976,6 @@ window.KONTAKT_CONFIG = {
       if (error) return toast(error.message);
       x.name = t.value.trim(); return toast("Name gespeichert.");
     }
-    if (t.id === "setSlot") { C.settings.slot_min = Number(t.value); await saveCalSettings(); return; }
     if (t.id === "setWeeks") { C.settings.weeks = Number(t.value); await saveCalSettings(); return; }
     if (d.nsshare) {
       const q = t.checked ? S.sb.from("ns_share").insert({ owner: S.me.id, viewer: d.nsshare }) : S.sb.from("ns_share").delete().eq("owner", S.me.id).eq("viewer", d.nsshare);
