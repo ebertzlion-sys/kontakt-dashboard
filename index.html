@@ -1807,7 +1807,6 @@ window.KONTAKT_CONFIG = {
     const openTodos = C.todos.filter((t) => !t.done).sort((a, b) => a.priority - b.priority || (a.due || "9999").localeCompare(b.due || "9999")).slice(0, 6);
     const openCount = C.todos.filter((t) => !t.done).length;
     const unplanned = C.todos.filter((t) => !t.done && (!t.planned_start || new Date(t.planned_start) < now)).length;
-    const recent = contacts.slice().sort((a, b) => (b.updated || 0) - (a.updated || 0)).slice(0, 5);
     const weekEnd = addDays(mondayOf(now), 7);
     const weekBookings = C.bookings.filter((b) => new Date(b.start_at) >= now && new Date(b.start_at) < weekEnd).length;
     const people = C.loaded ? sharedWithMe() : [];
@@ -1858,9 +1857,6 @@ window.KONTAKT_CONFIG = {
             ${svc.length ? svc.map((c) => `<button type="button" class="hrow" data-hopen="${c._id}"><span class="hdate ${serviceNext(c) < today ? "late" : "now"}">${serviceNext(c) < today ? "überfällig" : fmtDate(serviceNext(c))}</span><span class="hmain"><strong>${esc(c.name || "Ohne Namen")}</strong><span>Letzter Service ${(c.custom || {})._service ? fmtDate((c.custom || {})._service) : "–"}</span></span></button>`).join("") : `<p class="hint">In den nächsten 4 Wochen steht kein Service an.</p>`}
           </section>`;
         })()}
-        <section class="hcard"><div class="hcard-h"><h3>Zuletzt bearbeitet</h3><button class="linkbtn" type="button" data-view="list">Zur Liste</button></div>
-          ${recent.length ? recent.map((c) => `<button type="button" class="hrow" data-hopen="${c._id}"><span class="hmain"><strong>${esc(c.name || "Ohne Namen")}</strong><span>${esc([c.beruf, c.soziotop].filter(Boolean).join(" · ") || "Keine Angaben")}</span></span><span class="hlists">${c.lists.map((l) => `<i style="--c: var(--l-${l})" title="${esc(listById(l).label)}">${listById(l).short}</i>`).join("")}</span></button>`).join("") : `<p class="hint">Noch keine Kontakte. <button class="linkbtn" type="button" data-hact="contact">Ersten Kontakt anlegen</button></p>`}
-        </section>
       </div>`;
   }
   $("homeView").addEventListener("click", async (e) => {
