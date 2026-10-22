@@ -803,7 +803,7 @@ window.KONTAKT_CONFIG = {
   async function doEnter() {
     const { data: { session } } = await S.sb.auth.getSession();
     S.session = session;
-    if (!session) return showAuth("login");
+    if (!session) return showAuth(/^#registr/i.test(location.hash) ? "signup" : "login");
     const { data: me, error } = await S.sb.from("profiles").select("*").eq("id", session.user.id).maybeSingle();
     if (error || !me) return showAuth("login", "Dein Profil konnte nicht geladen werden. Versuche es gleich noch einmal.", true);
     S.me = me;
