@@ -1216,11 +1216,12 @@ window.KONTAKT_CONFIG = {
     const d = c.nextDate.replace(/-/g, "");
     const pad = (n) => String(n).padStart(2, "0");
     const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
-    let when;
+    let when, evS = new Date(c.nextDate + "T12:00:00"), evE = evS;
     if (time) {
       const [h, m] = time.split(":").map(Number);
       const start = new Date(c.nextDate + "T00:00:00"); start.setHours(h, m);
       const end = new Date(start.getTime() + dur * 60000);
+      evS = start; evE = end;
       const f = (x) => `${x.getFullYear()}${pad(x.getMonth() + 1)}${pad(x.getDate())}T${pad(x.getHours())}${pad(x.getMinutes())}00`;
       when = [`DTSTART:${f(start)}`, `DTEND:${f(end)}`, "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:Erinnerung", "TRIGGER:-PT30M", "END:VALARM"];
     } else {
@@ -1229,6 +1230,7 @@ window.KONTAKT_CONFIG = {
     }
     const title = (c.nextStep ? c.nextStep + " – " : "Next Step – ") + (c.name || "Kontakt");
     const desc = [c.beruf && "Beruf: " + c.beruf, c.soziotop && "Soziotop: " + c.soziotop, c.info].filter(Boolean).join("\n");
+    if (caldavOn()) return calIcsDownload([{ uid: `${id}-${d}`, s: evS, e: evE, allDay: !time, title, desc }], `${(c.name || "termin").replace(/[^\wäöüÄÖÜß-]+/g, "-")}-${c.nextDate}.ics`);
     const valarmAt = when.indexOf("BEGIN:VALARM");
     const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Kontakt-Dashboard//DE", "CALSCALE:GREGORIAN", "BEGIN:VEVENT",
       `UID:${id}-${d}@kontakt-dashboard`, `DTSTAMP:${stamp}`, ...when.slice(0, valarmAt),
@@ -1333,7 +1335,7 @@ window.KONTAKT_CONFIG = {
     const soon = isoDate(addDays(new Date(), 14));
     const since = addDays(new Date(), -30).toISOString();
     // Alles in einem Durchgang laden: jede zusätzliche Runde kostet am Handy spürbar Zeit.
-    const [st, td, bk, mb, ac, ns, ex, eb, nsh, tst] = await Promise.all([
+    const [st, td, bk, mb, ac, ns, ex, eb, nsh, tst, cd] = await Promise.all([
       S.sb.from("cal_settings").select("*").eq("owner", me).maybeSingle(),
       S.sb.from("todos").select("*").eq("owner", me).order("created_at"),
       S.sb.from("bookings").select("*").or(`owner.eq.${me},booker.eq.${me}`).gte("end_at", since).order("start_at"),
@@ -1345,6 +1347,7 @@ window.KONTAKT_CONFIG = {
       S.sb.from("ext_busy").select("cal_id, start_at, end_at, title, location").eq("owner", me).gte("end_at", addDays(new Date(), -7).toISOString()).order("start_at"),
       S.sb.from("ns_share").select("*"),
       S.sb.rpc("shared_next_steps", { p_days: 7 }),
+      S.sb.from("caldav_account").select("apple_id, calendars, default_url").eq("owner", me).maybeSingle(),
     ]);
     const err = [st, td, bk, mb, ac, ns].find((r) => r.error);
     if (err) { toast("Kalender konnte nicht geladen werden. Ist kalender.sql in Supabase ausgeführt? (" + err.error.message + ")"); }
@@ -1353,6 +1356,8 @@ window.KONTAKT_CONFIG = {
     C.todos = td.data || []; C.bookings = bk.data || []; C.members = mb.data || []; C.access = ac.data || []; C.nextSteps = ns.data || [];
     C.exts = ex.error ? null : ex.data || [];
     C.nsShare = nsh.error ? null : nsh.data || [];
+    // Direkt in iCloud eintragen: null = noch nicht eingerichtet (SQL fehlt), false = nicht verbunden
+    C.caldav = cd.error ? null : cd.data || false;
     C.teamSteps = tst.error ? null : tst.data || [];
     C.extBusy = eb.error ? [] : eb.data || [];
     C.loaded = true;
@@ -1444,7 +1449,33 @@ window.KONTAKT_CONFIG = {
   }
 
   // ---------- Kalender: iPhone-Kalender ----------
+  function caldavOn() { return !!(C.caldav && C.caldav.default_url); }
+  function caldavName(url) { const c = C.caldav && (C.caldav.calendars || []).find((x) => x.url === url); return c ? c.name : "iCloud"; }
+  async function caldav(body) {
+    const { data, error } = await S.sb.functions.invoke("icloud-kalender", { body });
+    if (error) return { error: "Die iCloud-Funktion ist nicht erreichbar. Ist sie in Supabase angelegt?" };
+    return data || { error: "Keine Antwort von iCloud." };
+  }
+  async function caldavCreate(events, calendarUrl) {
+    let ok = 0, err = "";
+    for (const ev of events) {
+      const r = await caldav({ action: "create", calendarUrl, uid: ev.uid, title: ev.title, location: ev.location || "", note: ev.desc || "", allDay: !!ev.allDay,
+        start: ev.allDay ? isoDate(ev.s) : ev.s.toISOString(), end: ev.allDay ? isoDate(addDays(ev.s, 1)) : ev.e.toISOString() });
+      if (r.error) { err = r.error; break; }
+      ok++;
+    }
+    return { ok, err };
+  }
   function calIcsDownload(events, filename) {
+    if (caldavOn() && !calIcsDownload.forceFile) {
+      const cal = C.caldav.default_url;
+      caldavCreate(events, cal).then(({ ok, err }) => {
+        if (err) { toast(`iCloud: ${err} Ich lade stattdessen die Kalenderdatei.`); calIcsDownload.forceFile = true; try { calIcsDownload(events, filename); } finally { calIcsDownload.forceFile = false; } return; }
+        toast(`${ok === 1 ? "Termin" : ok + " Termine"} in „${caldavName(cal)}“ eingetragen.`);
+        if (C.exts && C.exts.length) setTimeout(() => extSync(true), 4000);
+      });
+      return;
+    }
     const pad = (n) => String(n).padStart(2, "0");
     const f = (x) => `${x.getFullYear()}${pad(x.getMonth() + 1)}${pad(x.getDate())}T${pad(x.getHours())}${pad(x.getMinutes())}00`;
     const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
@@ -1543,8 +1574,10 @@ window.KONTAKT_CONFIG = {
       <div class="grid2 ev-times"><label class="field"><span>Von</span><input id="evFrom" type="time" value="${pad(h)}:00"></label><label class="field"><span>Bis</span><input id="evTo" type="time" value="${pad(h + 1)}:00"></label></div>
       <label class="field"><span>Ort (optional)</span><input id="evLoc" type="text" placeholder="z. B. Büro Stuttgart"></label>
       <label class="field"><span>Notiz (optional)</span><input id="evNote" type="text"></label>
-      <p class="hint">Dein iPhone fragt danach, in welchen Kalender der Termin soll. Wähle dort zum Beispiel „tecis“. Ist dieser Kalender hier verbunden, erscheint der Termin nach dem nächsten Abgleich auch im Cockpit.</p>
-      <div class="row"><button class="btn primary" type="submit">In iPhone-Kalender eintragen</button><button class="btn ghost" type="button" data-cact="newev">Abbrechen</button></div>
+      ${caldavOn() ? `<label class="field"><span>Kalender</span><select id="evCal">${(C.caldav.calendars || []).map((c) => `<option value="${esc(c.url)}" ${c.url === C.caldav.default_url ? "selected" : ""}>${esc(c.name)}</option>`).join("")}</select></label>
+        <p class="hint">Der Termin wird direkt in deinen iCloud-Kalender eingetragen. Ist dieser Kalender hier verbunden, erscheint er nach dem nächsten Abgleich auch im Cockpit.</p>`
+      : `<p class="hint">Dein iPhone fragt danach, in welchen Kalender der Termin soll. Wähle dort zum Beispiel „tecis“. Ist dieser Kalender hier verbunden, erscheint der Termin nach dem nächsten Abgleich auch im Cockpit. Unter Einstellungen kannst du iCloud verbinden, dann geht es ohne Nachfrage.</p>`}
+      <div class="row"><button class="btn primary" type="submit">${caldavOn() ? "In iCloud eintragen" : "In iPhone-Kalender eintragen"}</button><button class="btn ghost" type="button" data-cact="newev">Abbrechen</button></div>
     </form>`;
   }
   function calWeek() {
@@ -1623,7 +1656,7 @@ window.KONTAKT_CONFIG = {
     const isNow = now >= ws && now < we;
     const exportable = rBookings.length + rTodos.filter((t) => !t.done).length;
     return `<div class="cal-bar"><div class="seg" role="group" aria-label="Ansicht">${RANGES.map(([k, l]) => `<button type="button" data-crange="${k}" aria-pressed="${C.range === k}">${l}</button>`).join("")}</div>
-        <span class="spacer"></span><button class="btn" type="button" data-cact="weekics" ${exportable ? "" : "disabled"}>In iPhone-Kalender</button><button class="btn primary" type="button" data-cact="autoplan">Automatisch einplanen</button></div>
+        <span class="spacer"></span><button class="btn" type="button" data-cact="weekics" ${exportable ? "" : "disabled"}>${caldavOn() ? "In iCloud eintragen" : "In iPhone-Kalender"}</button><button class="btn primary" type="button" data-cact="autoplan">Automatisch einplanen</button></div>
       <div class="cal-bar"><div class="weeknav"><button class="btn" type="button" data-cweek="-1" aria-label="${unit[0]}">‹</button><strong>${label}</strong><button class="btn" type="button" data-cweek="1" aria-label="${unit[1]}">›</button>${isNow ? "" : `<button class="btn ghost" type="button" data-cweek="0">Heute</button>`}</div>
         <span class="spacer"></span>${C.exts && C.exts.length ? `<button class="btn" type="button" data-cact="extsync" ${C.extSyncing ? "disabled" : ""} title="iPhone-Kalender jetzt abgleichen">${C.extSyncing ? "Wird aktualisiert …" : "Aktualisieren"}</button>` : ""}<button class="btn" type="button" data-cact="newev" aria-expanded="${!!C.newEv}">+ Termin</button></div>
       ${C.newEv ? newEventForm(ws) : ""}
@@ -1727,6 +1760,7 @@ window.KONTAKT_CONFIG = {
           <div class="share-row">${s.blocked.filter((d) => d >= isoDate(new Date())).sort().map((d) => `<span class="share-chip">${new Date(d + "T12:00:00").toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" })}<button type="button" data-blkdel="${d}" aria-label="Entfernen">×</button></span>`).join("") || `<span class="hint">Keine</span>`}</div>
         </section>
         ${extCard()}
+        ${caldavCard()}
         <section class="set-card"><h3 class="section-title">Wer sieht deine Next Steps?</h3>
           ${C.nsShare ? `<p class="hint">Diese Personen sehen deine fälligen und in den nächsten 7 Tagen anstehenden Next Steps auf ihrer Startseite, zum Beispiel deine Führungskraft. Sie sehen nur Name, Next Step und Datum, nicht deine ganze Liste.</p>
           <div class="share-list">${others.map((m) => `<label class="share-item"><input type="checkbox" data-nsshare="${m.id}" ${C.nsShare.some((a) => a.owner === S.me.id && a.viewer === m.id) ? "checked" : ""}> ${esc(m.name)}</label>`).join("") || `<p class="hint">Es gibt noch keine weiteren freigeschalteten Mitglieder.</p>`}</div>`
@@ -1738,6 +1772,20 @@ window.KONTAKT_CONFIG = {
       </div>`;
   }
 
+  function caldavCard() {
+    const x = C.caldav;
+    const head = `<section class="set-card"><h3 class="section-title">Termine direkt in iCloud eintragen</h3>`;
+    if (x === null || x === undefined) return head + `<p class="hint">Dafür muss einmal <strong>icloud-eintragen.sql</strong> in Supabase ausgeführt und die Funktion <strong>icloud-kalender</strong> angelegt werden.</p></section>`;
+    if (!x) return head + `<p class="hint">Dann tragen „+ Termin“ und alle Kalender-Knöpfe Termine ohne Nachfrage in einen Kalender deiner Wahl ein, zum Beispiel „tecis“. Dafür brauchst du ein app-spezifisches Passwort von Apple. Dein normales Apple-Passwort gibst du hier nie ein.</p>
+      <ol class="ext-steps"><li>Öffne <strong>account.apple.com</strong> und melde dich an.</li><li>Tippe auf <strong>Anmelden und Sicherheit → App-spezifische Passwörter</strong>.</li><li>Erstelle ein neues Passwort mit dem Namen „Vertriebs-Cockpit“ und kopiere es.</li><li>Gib unten deine Apple-ID und dieses Passwort ein.</li></ol>
+      <div class="ext-add"><input type="email" id="cdId" placeholder="Apple-ID (E-Mail)" autocomplete="off" aria-label="Apple-ID">
+        <input type="password" id="cdPw" placeholder="App-spezifisches Passwort (xxxx-xxxx-xxxx-xxxx)" autocomplete="new-password" aria-label="App-spezifisches Passwort">
+        <button type="button" class="btn primary" data-cact="cdconnect">Verbinden</button></div>
+      <p class="hint">Das Passwort liegt danach nur in deiner Supabase-Datenbank und ist über die App für niemanden lesbar. Bei Apple kannst du es jederzeit widerrufen.</p></section>`;
+    return head + `<p class="ext-status ok">Verbunden mit ${esc(x.apple_id)}</p>
+      <label class="field"><span>Standard-Kalender für neue Termine und Kalender-Knöpfe</span><select id="cdDefault">${(x.calendars || []).map((c) => `<option value="${esc(c.url)}" ${c.url === x.default_url ? "selected" : ""}>${esc(c.name)}</option>`).join("")}</select></label>
+      <div class="share-row"><button type="button" class="btn" data-cact="cdreload">Kalender neu laden</button><button type="button" class="btn ghost" data-cact="cddisconnect">Trennen</button></div></section>`;
+  }
   function extCard() {
     const list = C.exts;
     const head = `<section class="set-card"><h3 class="section-title">iPhone-Kalender verbinden</h3>`;
@@ -1762,17 +1810,17 @@ window.KONTAKT_CONFIG = {
         <button type="button" class="btn primary" data-cact="extadd">Hinzufügen</button></div>
       </section>`;
   }
-  async function extSync() {
-    C.extSyncing = true; renderAll();
+  async function extSync(quiet) {
+    C.extSyncing = true; if (!quiet) renderAll();
     let r = await S.sb.rpc("ext_sync_mine", { p_start: true });
     for (let i = 0; i < 12 && !r.error && (r.data === "requested" || r.data === "waiting"); i++) {
       await new Promise((ok) => setTimeout(ok, 2500));
       r = await S.sb.rpc("ext_sync_mine", { p_start: false });
     }
     C.extSyncing = false;
-    if (r.error) toast("Abgleich fehlgeschlagen: " + r.error.message);
+    if (r.error && !quiet) toast("Abgleich fehlgeschlagen: " + r.error.message);
     await loadCal(); renderAll();
-    if (!r.error && C.exts && C.exts.length && C.exts.every((x) => x.last_status === "ok")) toast(C.exts.length === 1 ? "iPhone-Kalender abgeglichen." : `${C.exts.length} Kalender abgeglichen.`);
+    if (!quiet && !r.error && C.exts && C.exts.length && C.exts.every((x) => x.last_status === "ok")) toast(C.exts.length === 1 ? "iPhone-Kalender abgeglichen." : `${C.exts.length} Kalender abgeglichen.`);
   }
 
   // ---------- Kalender: Ereignisse ----------
@@ -1785,6 +1833,25 @@ window.KONTAKT_CONFIG = {
     if (d.crange) { C.range = d.crange; try { localStorage.setItem("calRange", C.range); } catch (err) { /* egal */ } renderAll(); return; }
     if (d.cday) { C.range = "day"; C.week = new Date(d.cday + "T12:00:00"); renderAll(); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
     if (d.cact === "autoplan") return autoPlan();
+    if (d.cact === "cdconnect") {
+      const appleId = $("cdId").value.trim(), password = $("cdPw").value.trim();
+      if (!appleId || !password) return toast("Bitte Apple-ID und app-spezifisches Passwort eingeben.");
+      t.disabled = true; t.textContent = "Wird verbunden …";
+      const r = await caldav({ action: "connect", appleId, password });
+      if (r.error) { t.disabled = false; t.textContent = "Verbinden"; return toast(r.error); }
+      await loadCal(); renderAll(); return toast(`iCloud verbunden. Neue Termine landen in „${caldavName(r.default_url)}“.`);
+    }
+    if (d.cact === "cdreload") {
+      const r = await caldav({ action: "calendars" });
+      if (r.error) return toast(r.error);
+      await loadCal(); renderAll(); return toast(`${r.calendars.length} Kalender gefunden.`);
+    }
+    if (d.cact === "cddisconnect") {
+      if (t.dataset.armed !== "1") { t.dataset.armed = "1"; t.textContent = "Wirklich trennen?"; t.classList.add("armed"); return; }
+      const r = await caldav({ action: "disconnect" });
+      if (r.error) return toast(r.error);
+      await loadCal(); renderAll(); return toast("iCloud getrennt. Das gespeicherte Passwort ist gelöscht. Widerrufe es zusätzlich bei Apple.");
+    }
     if (d.cact === "newev") { C.newEv = !C.newEv; renderAll(); if (C.newEv) $("evTitle")?.focus(); return; }
     if (d.cact === "weekics") {
       const { s: ws, e: we } = calRange();
@@ -1875,6 +1942,11 @@ window.KONTAKT_CONFIG = {
       C.settings[kind] = C.settings[kind].map((x, j) => (j === Number(i) ? w : x));
       await saveCalSettings(); renderAll(); return;
     }
+    if (t.id === "cdDefault") {
+      const { error } = await S.sb.rpc("caldav_set_default", { p_url: t.value });
+      if (error) return toast(error.message);
+      C.caldav.default_url = t.value; return toast(`Neue Termine landen jetzt in „${caldavName(t.value)}“.`);
+    }
     if (d.extdetails) {
       const { error } = await S.sb.rpc("ext_set_details", { p_id: d.extdetails, p_on: t.checked });
       if (error) { t.checked = !t.checked; return toast(error.message); }
@@ -1914,7 +1986,17 @@ window.KONTAKT_CONFIG = {
       const s = allDay ? new Date(date + "T12:00:00") : new Date(`${date}T${$("evFrom").value || "09:00"}:00`);
       const en = allDay ? s : new Date(`${date}T${$("evTo").value || "10:00"}:00`);
       if (!allDay && en <= s) return toast("Das Ende muss nach dem Beginn liegen.");
-      calIcsDownload([{ uid: "termin-" + Date.now().toString(36), s, e: en, allDay, title, desc: $("evNote").value.trim(), location: $("evLoc").value.trim() }], `${title.replace(/[^\wäöüÄÖÜß-]+/g, "-").slice(0, 40)}-${date}.ics`);
+      const ev = { uid: "termin-" + Date.now().toString(36), s, e: en, allDay, title, desc: $("evNote").value.trim(), location: $("evLoc").value.trim() };
+      if (caldavOn()) {
+        const cal = $("evCal").value, btn = e.target.querySelector('button[type="submit"]');
+        btn.disabled = true; btn.textContent = "Wird eingetragen …";
+        const { err } = await caldavCreate([ev], cal);
+        if (err) { btn.disabled = false; btn.textContent = "In iCloud eintragen"; return toast("iCloud: " + err); }
+        C.newEv = false; renderAll(); toast(`„${title}“ in „${caldavName(cal)}“ eingetragen.`);
+        if (C.exts && C.exts.length) setTimeout(() => extSync(true), 4000);
+        return;
+      }
+      calIcsDownload([ev], `${title.replace(/[^\wäöüÄÖÜß-]+/g, "-").slice(0, 40)}-${date}.ics`);
       C.newEv = false; renderAll();
       return toast("Wähle im iPhone den Kalender aus und tippe auf „Hinzufügen“.");
     }
