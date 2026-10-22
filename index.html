@@ -785,7 +785,7 @@ window.KONTAKT_CONFIG = {
     } else if (e.target.id === "fRecover") {
       res = await S.sb.auth.updateUser({ password: pass });
       if (res.error) showAuth("recover", res.error.message, true);
-      else { S.authMode = "login"; await enter(); toast("Neues Passwort gespeichert."); }
+      else { S.recovering = false; S.authMode = "login"; await enter(); toast("Neues Passwort gespeichert."); }
     }
     if (btn.isConnected) btn.disabled = false;
   });
@@ -804,6 +804,7 @@ window.KONTAKT_CONFIG = {
     const { data: { session } } = await S.sb.auth.getSession();
     S.session = session;
     if (!session) return showAuth(/^#registr/i.test(location.hash) ? "signup" : "login");
+    if (S.recovering) return showAuth("recover", "Lege jetzt ein neues Passwort fest.");
     const { data: me, error } = await S.sb.from("profiles").select("*").eq("id", session.user.id).maybeSingle();
     if (error || !me) return showAuth("login", "Dein Profil konnte nicht geladen werden. Versuche es gleich noch einmal.", true);
     S.me = me;
@@ -2492,9 +2493,11 @@ window.KONTAKT_CONFIG = {
 
   // ---------- Start ----------
   if (!window.supabase || !CFG.supabaseUrl || !CFG.supabaseAnonKey || CFG.supabaseUrl.includes("DEIN-PROJEKT")) { showAuth("setup"); return; }
+  // Link aus der „Passwort vergessen“-Mail: erst neues Passwort festlegen, nicht direkt ins Konto.
+  S.recovering = /type=recovery/.test(location.hash + location.search);
   S.sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey);
   S.sb.auth.onAuthStateChange((event) => {
-    if (event === "PASSWORD_RECOVERY") setTimeout(() => showAuth("recover", "Lege jetzt ein neues Passwort fest."), 0);
+    if (event === "PASSWORD_RECOVERY") S.recovering = true, setTimeout(() => showAuth("recover", "Lege jetzt ein neues Passwort fest."), 0);
     else if (event === "SIGNED_IN" && !S.me && S.authMode !== "recover") setTimeout(enter, 0);
   });
   enter();
