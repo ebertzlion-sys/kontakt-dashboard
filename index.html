@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Vertriebs-Cockpit</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://rpfzlutjdyvdvbmlrldr.supabase.co" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -606,6 +608,7 @@ window.KONTAKT_CONFIG = {
   function getVal(c, key) { return key.startsWith("c:") ? (c.custom || {})[key.slice(2)] : c[key]; }
   function setVal(c, key, v) { if (key.startsWith("c:")) c.custom = { ...(c.custom || {}), [key.slice(2)]: v }; else c[key] = v; }
   function inList(listId) { return [...S.contacts.values()].filter((c) => (c.lists || []).includes(listId)); }
+  const COLL = new Intl.Collator("de", { sensitivity: "base" });
   function visibleRows() {
     const q = S.q.trim().toLowerCase();
     let rows = inList(S.list);
@@ -613,8 +616,8 @@ window.KONTAKT_CONFIG = {
     if (S.dueOnly) rows = rows.filter(isDue);
     if (q) rows = rows.filter((c) => [c.name, c.soziotop, c.beruf, c.info, c.nextStep, ...Object.values(c.custom || {})].join(" ").toLowerCase().includes(q));
     const by = {
-      name: (a, b) => (a.name || "").localeCompare(b.name || "", "de", { sensitivity: "base" }),
-      next: (a, b) => (a.nextDate || "9999").localeCompare(b.nextDate || "9999") || by.name(a, b),
+      name: (a, b) => COLL.compare(a.name || "", b.name || ""),
+      next: (a, b) => { const x = a.nextDate || "9999", y = b.nextDate || "9999"; return x < y ? -1 : x > y ? 1 : by.name(a, b); },
       updated: (a, b) => (b.updated || 0) - (a.updated || 0),
       created: (a, b) => (b.created || 0) - (a.created || 0),
     };
@@ -719,7 +722,7 @@ window.KONTAKT_CONFIG = {
     if (!me.active) return showAuth("pending");
     $("authView").hidden = true; $("appView").hidden = false;
     $("whoName").textContent = displayName(me) + (me.role === "admin" ? " · Admin" : "");
-    await loadTeam();
+    loadTeam().then(() => { if (S.view === "team") renderAll(); else renderViews(); });
     const h = location.hash.slice(1);
     if (h === "kalender") { await openOwner(me.id, displayName(me), true); await openCal(); }
     else if (h === "team") { await openOwner(me.id, displayName(me), true); S.view = "team"; renderAll(); }
@@ -732,7 +735,7 @@ window.KONTAKT_CONFIG = {
   async function loadTeam() {
     const { data, error } = await S.sb.from("access").select("owner, can_edit, profiles!access_owner_fkey(id, name, email)").eq("viewer", S.me.id);
     S.team = error ? [] : data.filter((r) => r.profiles).map((r) => ({ id: r.owner, name: displayName(r.profiles), email: r.profiles.email, canEdit: r.can_edit }));
-    S.team.sort((a, b) => a.name.localeCompare(b.name, "de"));
+    S.team.sort((a, b) => COLL.compare(a.name, b.name));
   }
   async function loadAdmin() {
     const [u, a] = await Promise.all([
@@ -763,12 +766,16 @@ window.KONTAKT_CONFIG = {
       `${whose} · ${all} ${all === 1 ? "Kontakt" : "Kontakte"} · ${due} ${due === 1 ? "Next Step fällig" : "Next Steps fällig"}`;
   }
   function renderToolbar() {
-    const socs = [...new Set([...S.contacts.values()].map((c) => (c.soziotop || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "de"));
-    const berufe = [...new Set([...S.contacts.values()].map((c) => (c.beruf || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "de"));
+    const socs = [...new Set([...S.contacts.values()].map((c) => (c.soziotop || "").trim()).filter(Boolean))].sort((a, b) => COLL.compare(a, b));
+    const berufe = [...new Set([...S.contacts.values()].map((c) => (c.beruf || "").trim()).filter(Boolean))].sort((a, b) => COLL.compare(a, b));
     if (S.soz && !socs.includes(S.soz)) S.soz = "";
-    $("soz").innerHTML = `<option value="">Alle Soziotope</option>` + socs.map((s) => `<option ${s === S.soz ? "selected" : ""}>${esc(s)}</option>`).join("");
-    $("dl-soz").innerHTML = socs.map((s) => `<option value="${esc(s)}"></option>`).join("");
-    $("dl-beruf").innerHTML = berufe.map((s) => `<option value="${esc(s)}"></option>`).join("");
+    const key = socs.join("\u0001") + "\u0002" + S.soz + "\u0002" + berufe.join("\u0001");
+    if (key !== S.toolbarKey) {
+      S.toolbarKey = key;
+      $("soz").innerHTML = `<option value="">Alle Soziotope</option>` + socs.map((s) => `<option ${s === S.soz ? "selected" : ""}>${esc(s)}</option>`).join("");
+      $("dl-soz").innerHTML = socs.map((s) => `<option value="${esc(s)}"></option>`).join("");
+      $("dl-beruf").innerHTML = berufe.map((s) => `<option value="${esc(s)}"></option>`).join("");
+    }
     const due = inList(S.list).filter(isDue).length;
     $("dueOnly").textContent = `Fällig: ${due}`;
     $("dueOnly").setAttribute("aria-pressed", String(S.dueOnly));
@@ -820,7 +827,7 @@ window.KONTAKT_CONFIG = {
       ${custom.map((f) => `<th class="custom" title="Eigenes Feld">${esc(f.label)}</th>`).join("")}
       <th></th></tr>`;
     const dis = S.canEdit ? "" : "disabled";
-    const body = rows.map((c, i) => {
+    const rowHtml = (c, i) => {
       const id = c._id;
       return `<tr class="${S.selected.has(id) ? "sel" : ""}" data-row="${id}">
         <td class="rn sticky1">${i + 1}</td>
@@ -836,8 +843,18 @@ window.KONTAKT_CONFIG = {
         ${custom.map((f) => `<td class="w-c ${f.type === "janein" ? "bool" : ""} ${f.type === "datum" ? "date-c" : ""}">${cellInput(c, id, "c:" + f.id, f)}</td>`).join("")}
         <td class="act"><button type="button" class="open-btn" data-open="${id}" title="Alle Angaben ansehen">Öffnen</button></td>
       </tr>`;
-    }).join("");
-    box.innerHTML = `<table><thead>${head}</thead><tbody>${body}</tbody></table>`;
+    };
+    // Große Listen in Etappen aufbauen, damit die Seite sofort reagiert.
+    const FIRST = 80, STEP = 150;
+    const token = (S.tableToken = (S.tableToken || 0) + 1);
+    box.innerHTML = `<table><thead>${head}</thead><tbody>${rows.slice(0, FIRST).map(rowHtml).join("")}</tbody></table>`;
+    const tb = box.querySelector("tbody");
+    const more = (from) => {
+      if (token !== S.tableToken || from >= rows.length) return;
+      tb.insertAdjacentHTML("beforeend", rows.slice(from, from + STEP).map((c, j) => rowHtml(c, from + j)).join(""));
+      setTimeout(() => more(from + STEP), 16);
+    };
+    if (rows.length > FIRST) setTimeout(() => more(FIRST), 30);
   }
   function renderTeam() {
     const v = $("teamView");
@@ -1218,33 +1235,32 @@ window.KONTAKT_CONFIG = {
     const me = S.me.id;
     const soon = isoDate(addDays(new Date(), 14));
     const since = addDays(new Date(), -30).toISOString();
-    const [st, td, bk, mb, ac, ns] = await Promise.all([
+    // Alles in einem Durchgang laden: jede zusätzliche Runde kostet am Handy spürbar Zeit.
+    const [st, td, bk, mb, ac, ns, ex, eb, nsh, tst] = await Promise.all([
       S.sb.from("cal_settings").select("*").eq("owner", me).maybeSingle(),
       S.sb.from("todos").select("*").eq("owner", me).order("created_at"),
       S.sb.from("bookings").select("*").or(`owner.eq.${me},booker.eq.${me}`).gte("end_at", since).order("start_at"),
       S.sb.rpc("list_members"),
       S.sb.from("cal_access").select("*"),
       S.sb.from("contacts").select("id, name, next_step, next_date").eq("owner", me).not("next_date", "is", null).lte("next_date", soon),
+      // iPhone-Kalender und geteilte Next Steps (fehlen, solange die zugehörige SQL-Datei noch nicht ausgeführt ist)
+      S.sb.from("ext_cal").select("id, name, url, show_details, last_sync, last_status, events, pending").eq("owner", me).order("created_at"),
+      S.sb.from("ext_busy").select("cal_id, start_at, end_at, title, location").eq("owner", me).gte("end_at", addDays(new Date(), -7).toISOString()).order("start_at"),
+      S.sb.from("ns_share").select("*"),
+      S.sb.rpc("shared_next_steps", { p_days: 7 }),
     ]);
     const err = [st, td, bk, mb, ac, ns].find((r) => r.error);
     if (err) { toast("Kalender konnte nicht geladen werden. Ist kalender.sql in Supabase ausgeführt? (" + err.error.message + ")"); }
     C.settings = settingsRow(st.data);
     C.todos = td.data || []; C.bookings = bk.data || []; C.members = mb.data || []; C.access = ac.data || []; C.nextSteps = ns.data || [];
-    // iPhone-Kalender (fehlt, solange iphone-kalender.sql noch nicht ausgeführt ist)
-    const [ex, eb] = await Promise.all([
-      S.sb.from("ext_cal").select("id, name, url, show_details, last_sync, last_status, events, pending").eq("owner", me).order("created_at"),
-      S.sb.from("ext_busy").select("cal_id, start_at, end_at, title, location").eq("owner", me).gte("end_at", addDays(new Date(), -7).toISOString()).order("start_at"),
-    ]);
     C.exts = ex.error ? null : ex.data || [];
-    // Geteilte Next Steps (fehlt, solange next-steps-teilen.sql noch nicht ausgeführt ist)
-    const [nsh, tst] = await Promise.all([S.sb.from("ns_share").select("*"), S.sb.rpc("shared_next_steps", { p_days: 7 })]);
     C.nsShare = nsh.error ? null : nsh.data || [];
     C.teamSteps = tst.error ? null : tst.data || [];
     C.extBusy = eb.error ? [] : eb.data || [];
     C.loaded = true;
     if (!C.channel) {
       let t = null;
-      const again = () => { clearTimeout(t); t = setTimeout(async () => { await loadCal(); if (S.view === "cal") renderAll(); }, 400); };
+      const again = () => { clearTimeout(t); t = setTimeout(async () => { await loadCal(); if (S.view === "cal" || S.view === "home") renderAll(); }, 400); };
       C.channel = S.sb.channel("cal-" + me)
         .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, again)
         .on("postgres_changes", { event: "*", schema: "public", table: "todos", filter: "owner=eq." + me }, again)
@@ -1274,7 +1290,7 @@ window.KONTAKT_CONFIG = {
   }
   function sharedWithMe() {
     return C.access.filter((a) => a.viewer === S.me.id).map((a) => ({ id: a.owner, name: (C.members.find((m) => m.id === a.owner) || {}).name || "Unbekannt" }))
-      .sort((a, b) => a.name.localeCompare(b.name, "de"));
+      .sort((a, b) => COLL.compare(a.name, b.name));
   }
   async function loadPreviews() {
     const people = sharedWithMe();
@@ -1794,9 +1810,11 @@ window.KONTAKT_CONFIG = {
 
   // ---------- Startseite ----------
   async function openHome() {
-    if (S.owner !== S.me.id) await openOwner(S.me.id, displayName(S.me), true);
+    const own = S.owner !== S.me.id ? openOwner(S.me.id, displayName(S.me), true) : null;
     S.view = "home"; renderAll();
-    await loadCal(); renderAll();
+    const cal = loadCal();
+    if (own) await own;
+    await cal; if (S.view === "home") renderAll();
     await loadPreviews(); if (S.view === "home") renderAll();
   }
   function renderHome() {
@@ -1927,7 +1945,8 @@ window.KONTAKT_CONFIG = {
     S.list = t.dataset.list; S.selected.clear(); S.dueOnly = false;
     renderAll();
   });
-  $("q").addEventListener("input", (e) => { S.q = e.target.value; renderTable(); renderBulk(); });
+  let qTimer = null;
+  $("q").addEventListener("input", (e) => { S.q = e.target.value; clearTimeout(qTimer); qTimer = setTimeout(() => { renderTable(); renderBulk(); }, 150); });
   $("soz").addEventListener("change", (e) => { S.soz = e.target.value; renderAll(); });
   $("sort").addEventListener("change", (e) => { S.sort = e.target.value; try { localStorage.setItem("kd-sort", S.sort); } catch (err) {} renderAll(); });
   $("dueOnly").addEventListener("click", () => { S.dueOnly = !S.dueOnly; renderAll(); });
