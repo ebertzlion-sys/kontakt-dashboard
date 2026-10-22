@@ -1200,6 +1200,7 @@ window.KONTAKT_CONFIG = {
     }
     return out;
   }
+  function extEvents() { return C.extBusy.filter((x) => x.title).map((x) => { const cal = (C.exts || []).find((c) => c.id === x.cal_id); const s = new Date(x.start_at), e = new Date(x.end_at); return { s, e, allDay: s.getHours() === 0 && s.getMinutes() === 0 && e - s >= 23 * 3600000, title: x.title, location: x.location, cal: (cal && cal.name) || "iPhone" }; }); }
   function myBusy() {
     const b = C.bookings.filter((x) => x.owner === S.me.id).map((x) => ({ s: new Date(x.start_at), e: new Date(x.end_at) }));
     const t = C.todos.filter((x) => !x.done && x.planned_start).map((x) => ({ s: new Date(x.planned_start), e: new Date(new Date(x.planned_start).getTime() + x.duration_min * 60000) }));
@@ -1231,8 +1232,8 @@ window.KONTAKT_CONFIG = {
     C.todos = td.data || []; C.bookings = bk.data || []; C.members = mb.data || []; C.access = ac.data || []; C.nextSteps = ns.data || [];
     // iPhone-Kalender (fehlt, solange iphone-kalender.sql noch nicht ausgeführt ist)
     const [ex, eb] = await Promise.all([
-      S.sb.from("ext_cal").select("id, name, url, last_sync, last_status, events, pending").eq("owner", me).order("created_at"),
-      S.sb.from("ext_busy").select("cal_id, start_at, end_at").eq("owner", me).gte("end_at", addDays(new Date(), -7).toISOString()).order("start_at"),
+      S.sb.from("ext_cal").select("id, name, url, show_details, last_sync, last_status, events, pending").eq("owner", me).order("created_at"),
+      S.sb.from("ext_busy").select("cal_id, start_at, end_at, title, location").eq("owner", me).gte("end_at", addDays(new Date(), -7).toISOString()).order("start_at"),
     ]);
     C.exts = ex.error ? null : ex.data || [];
     // Geteilte Next Steps (fehlt, solange next-steps-teilen.sql noch nicht ausgeführt ist)
@@ -1397,6 +1398,10 @@ window.KONTAKT_CONFIG = {
       const time = whole ? "ganztägig" : `${hm(s < d ? d : s)}–${e > dn ? "24:00" : hm(e)}`;
       const cal = (C.exts || []).find((c) => c.id === x.cal_id);
       const cname = (cal && cal.name) || "Privat";
+      if (x.title) {
+        items.push({ s: s < d ? d : s, kind: "booking", short: `${whole ? "" : hm(s < d ? d : s) + " "}${x.title}`, html: `<div class="ci booking ical"><span class="ct">${time}</span><div class="cx"><strong>${esc(x.title)}</strong><span>${x.location ? esc(x.location) + " · " : ""}iPhone-Kalender „${esc(cname)}“</span></div></div>` });
+        continue;
+      }
       items.push({ s: s < d ? d : s, kind: "private", short: `${whole ? "" : hm(s < d ? d : s) + " "}${cname}`, html: `<div class="ci private"><span class="ct">${time}</span><div class="cx"><strong>${esc(cname)}</strong><span>privater Termin aus deinem iPhone-Kalender</span></div></div>` });
     }
     for (const t of C.todos.filter((t) => t.planned_start && new Date(t.planned_start) >= d && new Date(t.planned_start) < dn)) {
@@ -1418,6 +1423,7 @@ window.KONTAKT_CONFIG = {
     const openTodos = C.todos.filter((t) => !t.done);
     const unplanned = openTodos.filter((t) => !t.planned_start || new Date(t.planned_start) < now);
     const rBookings = C.bookings.filter((b) => new Date(b.start_at) >= ws && new Date(b.start_at) < we);
+    const rExt = extEvents().filter((x) => x.s >= ws && x.s < we);
     const rTodos = C.todos.filter((t) => t.planned_start && new Date(t.planned_start) >= ws && new Date(t.planned_start) < we);
     const rSlots = allSlots.filter((s) => s.s >= ws && s.s < we);
     let focusFree = 0;
@@ -1487,7 +1493,7 @@ window.KONTAKT_CONFIG = {
     return `<div class="cal-bar"><div class="seg" role="group" aria-label="Ansicht">${RANGES.map(([k, l]) => `<button type="button" data-crange="${k}" aria-pressed="${C.range === k}">${l}</button>`).join("")}</div>
         <span class="spacer"></span><button class="btn" type="button" data-cact="weekics" ${exportable ? "" : "disabled"}>In iPhone-Kalender</button><button class="btn primary" type="button" data-cact="autoplan">Automatisch einplanen</button></div>
       <div class="cal-bar"><div class="weeknav"><button class="btn" type="button" data-cweek="-1" aria-label="${unit[0]}">‹</button><strong>${label}</strong><button class="btn" type="button" data-cweek="1" aria-label="${unit[1]}">›</button>${isNow ? "" : `<button class="btn ghost" type="button" data-cweek="0">Heute</button>`}</div></div>
-      <div class="cal-sum"><span><strong>${rSlots.length}</strong> buchbare Termine frei</span><span><strong>${(Math.round(focusFree / 6) / 10).toLocaleString("de-DE")} Std.</strong> To-Do-Zeit frei</span><span><strong>${rBookings.length}</strong> ${rBookings.length === 1 ? "Termin" : "Termine"}</span><span><strong>${rTodos.filter((t) => !t.done).length}</strong> To-Dos eingeplant</span></div>
+      <div class="cal-sum"><span><strong>${rSlots.length}</strong> buchbare Termine frei</span><span><strong>${(Math.round(focusFree / 6) / 10).toLocaleString("de-DE")} Std.</strong> To-Do-Zeit frei</span><span><strong>${rBookings.length + rExt.length}</strong> ${rBookings.length + rExt.length === 1 ? "Termin" : "Termine"}</span><span><strong>${rTodos.filter((t) => !t.done).length}</strong> To-Dos eingeplant</span></div>
       ${tips.length ? `<div class="tips">${tips.map((t) => `<p>${t}</p>`).join("")}</div>` : ""}
       ${grid}`;
   }
@@ -1608,15 +1614,17 @@ window.KONTAKT_CONFIG = {
       : x.last_status ? `<p class="ext-status err">${esc(x.last_status)}</p>`
       : `<p class="ext-status">Der erste Abgleich läuft in den nächsten Minuten.</p>`;
     const steps = `<ol class="ext-steps"><li>Öffne auf dem iPhone die App <strong>Kalender</strong> und tippe unten auf <strong>Kalender</strong>.</li><li>Tippe beim gewünschten Kalender auf das <strong>ⓘ</strong>.</li><li>Schalte <strong>Öffentlicher Kalender</strong> ein und tippe auf <strong>Link teilen → Kopieren</strong>.</li><li>Füge den Link unten ein und tippe auf <strong>Hinzufügen</strong>. Wiederhole das für jeden weiteren Kalender.</li></ol>`;
-    return head + `<p class="hint">Termine aus deinen iPhone-Kalendern blockieren automatisch deine buchbaren Zeiten und deine To-Do-Zeit. Gespeichert werden nur Beginn und Ende, keine Titel. Andere sehen nur, dass du belegt bist. Der Abgleich läuft alle 10 Minuten.</p>
+    return head + `<p class="hint">Termine aus deinen iPhone-Kalendern blockieren automatisch deine buchbaren Zeiten und deine To-Do-Zeit. Normal werden nur Beginn und Ende gespeichert und als „Privat“ angezeigt. Wenn du bei einem Kalender „Termine mit Titel anzeigen“ einschaltest, siehst du Titel und Ort wie im iPhone. Andere sehen in jedem Fall nur, dass du belegt bist. Der Abgleich läuft alle 10 Minuten.</p>
       ${list.length ? `<div class="ext-list">${list.map((x) => `<div class="ext-item">
           <div class="ext-row"><input type="text" class="ext-name" data-extname="${x.id}" value="${esc(x.name || "")}" placeholder="Name, z. B. Privat" aria-label="Name des Kalenders" maxlength="60"><button type="button" class="btn ghost" data-extdel="${x.id}">Entfernen</button></div>
           <span class="ext-url" title="${esc(x.url)}">${esc(x.url.replace(/^https:\/\//, ""))}</span>
+          <label class="share-item"><input type="checkbox" data-extdetails="${x.id}" ${x.show_details ? "checked" : ""}> Termine mit Titel anzeigen statt „Privat“</label>
           ${status(x)}</div>`).join("")}</div>
         <div class="share-row"><button type="button" class="btn" data-cact="extsync" ${C.extSyncing ? "disabled" : ""}>Alle jetzt abgleichen</button></div>
         <details class="ext-more"><summary>Weiteren Kalender hinzufügen</summary>${steps}</details>` : steps}
       <div class="ext-add"><input type="text" id="extName" placeholder="Name, z. B. ${list.length ? "Familie" : "Privat"}" aria-label="Name des neuen Kalenders" maxlength="60">
         <input type="url" id="extUrl" placeholder="webcal://p…-caldav.icloud.com/published/…" aria-label="Kalender-Link" autocomplete="off">
+        <label class="share-item"><input type="checkbox" id="extDetails"> Termine mit Titel anzeigen statt „Privat“, z. B. für deinen tecis-Kalender</label>
         <button type="button" class="btn primary" data-cact="extadd">Hinzufügen</button></div>
       </section>`;
   }
@@ -1652,7 +1660,7 @@ window.KONTAKT_CONFIG = {
     if (d.cact === "extadd") {
       const url = $("extUrl").value.trim(), name = $("extName").value.trim();
       if (!url) return toast("Füge zuerst den Link aus deinem iPhone-Kalender ein.");
-      const { error } = await S.sb.rpc("ext_add", { p_name: name || `Kalender ${(C.exts || []).length + 1}`, p_url: url });
+      const { error } = await S.sb.rpc("ext_add", { p_name: name || `Kalender ${(C.exts || []).length + 1}`, p_url: url, p_details: $("extDetails").checked });
       if (error) return toast(error.message);
       return extSync();
     }
@@ -1732,6 +1740,12 @@ window.KONTAKT_CONFIG = {
       C.settings[kind] = C.settings[kind].map((x, j) => (j === Number(i) ? w : x));
       await saveCalSettings(); renderAll(); return;
     }
+    if (d.extdetails) {
+      const { error } = await S.sb.rpc("ext_set_details", { p_id: d.extdetails, p_on: t.checked });
+      if (error) { t.checked = !t.checked; return toast(error.message); }
+      if (t.checked) return extSync();
+      await loadCal(); renderAll(); return toast("Termine aus diesem Kalender erscheinen wieder als „Privat“.");
+    }
     if (d.extname) {
       const x = (C.exts || []).find((c) => c.id === d.extname); if (!x) return;
       const { error } = await S.sb.rpc("ext_update", { p_id: x.id, p_name: t.value.trim(), p_url: x.url });
@@ -1800,15 +1814,18 @@ window.KONTAKT_CONFIG = {
     const todayItems = [];
     if (C.loaded) {
       for (const b of C.bookings) { const s = new Date(b.start_at); if (s >= todayStart && s < tomorrow) todayItems.push({ s, e: new Date(b.end_at), kind: "booking", title: b.title, sub: b.owner === S.me.id ? "mit " + b.booker_name : "bei " + b.owner_name }); }
+      for (const x of extEvents()) { if (x.s < tomorrow && x.e > todayStart) todayItems.push({ s: x.s, e: x.e, allDay: x.allDay, kind: "booking", title: x.title, sub: (x.location ? x.location + " · " : "") + "Kalender „" + x.cal + "“" }); }
       for (const t of C.todos) { if (!t.planned_start || t.done) continue; const s = new Date(t.planned_start); if (s >= todayStart && s < tomorrow) todayItems.push({ s, e: new Date(s.getTime() + t.duration_min * 60000), kind: "todo", title: t.title, sub: "To-Do", id: t.id }); }
       todayItems.sort((a, b) => a.s - b.s);
     }
-    const nextBookings = C.bookings.filter((b) => new Date(b.start_at) >= tomorrow).sort((a, b) => a.start_at.localeCompare(b.start_at)).slice(0, 5);
+    const nextBookings = C.bookings.filter((b) => new Date(b.start_at) >= tomorrow).map((b) => ({ s: new Date(b.start_at), title: b.title, sub: b.owner === S.me.id ? "mit " + b.booker_name : "bei " + b.owner_name }))
+      .concat(extEvents().filter((x) => x.s >= tomorrow).map((x) => ({ s: x.s, allDay: x.allDay, title: x.title, sub: x.location || "Kalender „" + x.cal + "“" })))
+      .sort((a, b) => a.s - b.s).slice(0, 6);
     const openTodos = C.todos.filter((t) => !t.done).sort((a, b) => a.priority - b.priority || (a.due || "9999").localeCompare(b.due || "9999")).slice(0, 6);
     const openCount = C.todos.filter((t) => !t.done).length;
     const unplanned = C.todos.filter((t) => !t.done && (!t.planned_start || new Date(t.planned_start) < now)).length;
     const weekEnd = addDays(mondayOf(now), 7);
-    const weekBookings = C.bookings.filter((b) => new Date(b.start_at) >= now && new Date(b.start_at) < weekEnd).length;
+    const weekBookings = C.bookings.filter((b) => new Date(b.start_at) >= now && new Date(b.start_at) < weekEnd).length + extEvents().filter((x) => x.s >= now && x.s < weekEnd).length;
     const people = C.loaded ? sharedWithMe() : [];
     const stepRow = (c) => `<button type="button" class="hrow" data-hopen="${c._id}"><span class="hdate ${c.nextDate < today ? "late" : c.nextDate === today ? "now" : ""}">${c.nextDate < today ? "überfällig" : c.nextDate === today ? "heute" : fmtDate(c.nextDate)}</span><span class="hmain"><strong>${esc(c.name || "Ohne Namen")}</strong><span>${esc(c.nextStep || "Next Step")}</span></span></button>`;
     const tile = (n, label, tone, act) => `<button type="button" class="htile ${tone || ""}" ${act}><strong>${n}</strong><span>${label}</span></button>`;
@@ -1825,7 +1842,7 @@ window.KONTAKT_CONFIG = {
       </div>
       <div class="hgrid">
         <section class="hcard"><div class="hcard-h"><h3>Heute</h3><button class="linkbtn" type="button" data-hgo="woche">Zur Woche</button></div>
-          ${!C.loaded ? `<p class="hint">Wird geladen …</p>` : todayItems.length ? todayItems.map((x) => `<div class="hrow static ${x.kind}"><span class="hdate">${hm(x.s)}</span><span class="hmain"><strong>${esc(x.title)}</strong><span>${esc(x.sub)} · bis ${hm(x.e)}</span></span>${x.kind === "todo" ? `<input type="checkbox" data-htdone="${x.id}" aria-label="Erledigt">` : ""}</div>`).join("") : `<p class="hint">Heute ist nichts geplant.${unplanned ? ` Du hast ${unplanned} ${unplanned === 1 ? "offenes To-Do" : "offene To-Dos"}, die du einplanen kannst.` : ""}</p>`}
+          ${!C.loaded ? `<p class="hint">Wird geladen …</p>` : todayItems.length ? todayItems.map((x) => `<div class="hrow static ${x.kind}"><span class="hdate">${x.allDay ? "ganztägig" : hm(x.s)}</span><span class="hmain"><strong>${esc(x.title)}</strong><span>${esc(x.sub)}${x.allDay ? "" : " · bis " + hm(x.e)}</span></span>${x.kind === "todo" ? `<input type="checkbox" data-htdone="${x.id}" aria-label="Erledigt">` : ""}</div>`).join("") : `<p class="hint">Heute ist nichts geplant.${unplanned ? ` Du hast ${unplanned} ${unplanned === 1 ? "offenes To-Do" : "offene To-Dos"}, die du einplanen kannst.` : ""}</p>`}
         </section>
         <section class="hcard"><div class="hcard-h"><h3>Fällige Next Steps</h3><button class="linkbtn" type="button" data-hgo="due">Alle anzeigen</button></div>
           ${steps.length ? steps.map(stepRow).join("") : `<p class="hint">In den nächsten 7 Tagen ist kein Next Step fällig.</p>`}
@@ -1845,7 +1862,7 @@ window.KONTAKT_CONFIG = {
           ${unplanned ? `<button class="btn" type="button" data-hact="plan">${unplanned} ${unplanned === 1 ? "To-Do" : "To-Dos"} automatisch einplanen</button>` : ""}
         </section>
         <section class="hcard"><div class="hcard-h"><h3>Nächste Termine</h3><button class="linkbtn" type="button" data-hgo="buchen">Zeit buchen</button></div>
-          ${!C.loaded ? `<p class="hint">Wird geladen …</p>` : nextBookings.length ? nextBookings.map((b) => `<div class="hrow static booking"><span class="hdate">${dayLabel(new Date(b.start_at))}</span><span class="hmain"><strong>${esc(b.title)}</strong><span>${hm(new Date(b.start_at))} Uhr · ${b.owner === S.me.id ? "mit " + esc(b.booker_name) : "bei " + esc(b.owner_name)}</span></span></div>`).join("") : `<p class="hint">Keine weiteren Termine.</p>`}
+          ${!C.loaded ? `<p class="hint">Wird geladen …</p>` : nextBookings.length ? nextBookings.map((b) => `<div class="hrow static booking"><span class="hdate">${dayLabel(b.s)}</span><span class="hmain"><strong>${esc(b.title)}</strong><span>${b.allDay ? "ganztägig" : hm(b.s) + " Uhr"} · ${esc(b.sub)}</span></span></div>`).join("") : `<p class="hint">Keine weiteren Termine.</p>`}
           ${people.length ? `<div class="hwho">${people.map((p) => { const d = C.previews[p.id]; const n = d && d.slots[0]; return `<button type="button" class="hwho-i" data-hbook="${p.id}"><strong>${esc(p.name)} hat Zeit</strong><span>${!d ? "…" : n ? `${dayLabel(n.s)}, ${hm(n.s)} Uhr` : "gerade nichts frei"}</span></button>`; }).join("")}</div>` : ""}
         </section>
         ${(() => {
