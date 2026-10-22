@@ -1153,7 +1153,7 @@ window.KONTAKT_CONFIG = {
   const C = {
     tab: "woche", week: new Date(), range: (() => { try { return localStorage.getItem("calRange") || "week"; } catch (e) { return "week"; } })(), loaded: false,
     settings: { avail: [], focus: [], slot_min: 60, weeks: 4, blocked: [] },
-    todos: [], bookings: [], members: [], access: [], nextSteps: [], exts: null, extBusy: [], extSyncing: false,
+    todos: [], bookings: [], members: [], access: [], nextSteps: [], exts: null, extBusy: [], extSyncing: false, nsShare: null, teamSteps: null,
     target: null, targetSettings: null, targetBusy: [], previews: {}, pick: null, channel: null, showDone: false,
   };
   function mondayOf(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
@@ -1235,6 +1235,10 @@ window.KONTAKT_CONFIG = {
       S.sb.from("ext_busy").select("cal_id, start_at, end_at").eq("owner", me).gte("end_at", addDays(new Date(), -7).toISOString()).order("start_at"),
     ]);
     C.exts = ex.error ? null : ex.data || [];
+    // Geteilte Next Steps (fehlt, solange next-steps-teilen.sql noch nicht ausgeführt ist)
+    const [nsh, tst] = await Promise.all([S.sb.from("ns_share").select("*"), S.sb.rpc("shared_next_steps", { p_days: 7 })]);
+    C.nsShare = nsh.error ? null : nsh.data || [];
+    C.teamSteps = tst.error ? null : tst.data || [];
     C.extBusy = eb.error ? [] : eb.data || [];
     C.loaded = true;
     if (!C.channel) {
@@ -1583,6 +1587,11 @@ window.KONTAKT_CONFIG = {
           <div class="share-row">${s.blocked.filter((d) => d >= isoDate(new Date())).sort().map((d) => `<span class="share-chip">${new Date(d + "T12:00:00").toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" })}<button type="button" data-blkdel="${d}" aria-label="Entfernen">×</button></span>`).join("") || `<span class="hint">Keine</span>`}</div>
         </section>
         ${extCard()}
+        <section class="set-card"><h3 class="section-title">Wer sieht deine Next Steps?</h3>
+          ${C.nsShare ? `<p class="hint">Diese Personen sehen deine fälligen und in den nächsten 7 Tagen anstehenden Next Steps auf ihrer Startseite, zum Beispiel deine Führungskraft. Sie sehen nur Name, Next Step und Datum, nicht deine ganze Liste.</p>
+          <div class="share-list">${others.map((m) => `<label class="share-item"><input type="checkbox" data-nsshare="${m.id}" ${C.nsShare.some((a) => a.owner === S.me.id && a.viewer === m.id) ? "checked" : ""}> ${esc(m.name)}</label>`).join("") || `<p class="hint">Es gibt noch keine weiteren freigeschalteten Mitglieder.</p>`}</div>`
+          : `<p class="hint">Damit du deine Next Steps teilen kannst, muss einmal <strong>next-steps-teilen.sql</strong> in Supabase ausgeführt werden.</p>`}
+        </section>
         <section class="set-card"><h3 class="section-title">Wer darf sehen, wann du Zeit hast, und dich buchen?</h3><p class="hint">Diese Personen sehen nur, wann du frei bist, nicht was du vorhast.</p>
           <div class="share-list">${others.map((m) => `<label class="share-item"><input type="checkbox" data-calshare="${m.id}" ${shared.has(m.id) ? "checked" : ""}> ${esc(m.name)}</label>`).join("") || `<p class="hint">Es gibt noch keine weiteren freigeschalteten Mitglieder.</p>`}</div>
         </section>
@@ -1731,6 +1740,14 @@ window.KONTAKT_CONFIG = {
     }
     if (t.id === "setSlot") { C.settings.slot_min = Number(t.value); await saveCalSettings(); return; }
     if (t.id === "setWeeks") { C.settings.weeks = Number(t.value); await saveCalSettings(); return; }
+    if (d.nsshare) {
+      const q = t.checked ? S.sb.from("ns_share").insert({ owner: S.me.id, viewer: d.nsshare }) : S.sb.from("ns_share").delete().eq("owner", S.me.id).eq("viewer", d.nsshare);
+      const { error } = await q;
+      if (error) { toast(error.message); t.checked = !t.checked; return; }
+      const { data } = await S.sb.from("ns_share").select("*"); C.nsShare = data || C.nsShare;
+      const name = (C.members.find((m) => m.id === d.nsshare) || {}).name;
+      return toast(t.checked ? `${name} sieht jetzt deine Next Steps auf der Startseite.` : `${name} sieht deine Next Steps nicht mehr.`);
+    }
     if (d.calshare) {
       const q = t.checked ? S.sb.from("cal_access").insert({ owner: S.me.id, viewer: d.calshare }) : S.sb.from("cal_access").delete().eq("owner", S.me.id).eq("viewer", d.calshare);
       const { error } = await q;
@@ -1814,6 +1831,16 @@ window.KONTAKT_CONFIG = {
         <section class="hcard"><div class="hcard-h"><h3>Fällige Next Steps</h3><button class="linkbtn" type="button" data-hgo="due">Alle anzeigen</button></div>
           ${steps.length ? steps.map(stepRow).join("") : `<p class="hint">In den nächsten 7 Tagen ist kein Next Step fällig.</p>`}
         </section>
+        ${(() => {
+          const ts = C.teamSteps || [];
+          const sharers = (C.nsShare || []).filter((a) => a.viewer === S.me.id).length;
+          if (!ts.length && !sharers) return "";
+          const shown = ts.slice(0, 10);
+          return `<section class="hcard"><div class="hcard-h"><h3>Next Steps im Team</h3><span class="hint">${sharers} ${sharers === 1 ? "Person teilt" : "Personen teilen"}</span></div>
+            ${shown.length ? shown.map((x) => `<div class="hrow static"><span class="hdate ${x.next_date < today ? "late" : x.next_date === today ? "now" : ""}">${x.next_date < today ? "überfällig" : x.next_date === today ? "heute" : fmtDate(x.next_date)}</span><span class="hmain"><strong>${esc(x.contact_name || "Ohne Namen")}</strong><span>${esc(x.owner_name)} · ${esc(x.next_step || "Next Step")}</span></span></div>`).join("") : `<p class="hint">Im Team ist in den nächsten 7 Tagen kein Next Step fällig.</p>`}
+            ${ts.length > shown.length ? `<p class="hint">+${ts.length - shown.length} weitere</p>` : ""}
+          </section>`;
+        })()}
         <section class="hcard"><div class="hcard-h"><h3>Offene To-Dos</h3><button class="linkbtn" type="button" data-hgo="todos">Alle anzeigen</button></div>
           ${!C.loaded ? `<p class="hint">Wird geladen …</p>` : openTodos.length ? openTodos.map((t) => `<div class="hrow static"><input type="checkbox" data-htdone="${t.id}" aria-label="Erledigt"><span class="hmain"><strong>${esc(t.title)}</strong><span>${t.priority === 1 ? "Hohe Priorität · " : ""}${t.planned_start && new Date(t.planned_start) > now ? `${dayLabel(new Date(t.planned_start))} ${hm(new Date(t.planned_start))}` : "nicht eingeplant"}${t.due ? " · fällig " + fmtDate(t.due) : ""}</span></span></div>`).join("") : `<p class="hint">Keine offenen To-Dos.</p>`}
           ${unplanned ? `<button class="btn" type="button" data-hact="plan">${unplanned} ${unplanned === 1 ? "To-Do" : "To-Dos"} automatisch einplanen</button>` : ""}
