@@ -1270,7 +1270,7 @@ window.KONTAKT_CONFIG = {
   const C = {
     tab: "woche", week: new Date(), range: (() => { try { return localStorage.getItem("calRange") || "week"; } catch (e) { return "week"; } })(), loaded: false,
     settings: { avail: [], focus: [], slot_min: 60, weeks: 4, blocked: [] },
-    todos: [], bookings: [], members: [], access: [], nextSteps: [], exts: null, extBusy: [], extSyncing: false, nsShare: null, teamSteps: null,
+    todos: [], bookings: [], members: [], access: [], nextSteps: [], exts: null, extBusy: [], extSyncing: false, teamSteps: null,
     target: null, targetSettings: null, targetBusy: [], previews: {}, pick: null, channel: null, showDone: false,
   };
   function mondayOf(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
@@ -1348,7 +1348,7 @@ window.KONTAKT_CONFIG = {
     const soon = isoDate(addDays(new Date(), 14));
     const since = addDays(new Date(), -30).toISOString();
     // Alles in einem Durchgang laden: jede zusätzliche Runde kostet am Handy spürbar Zeit.
-    const [st, td, bk, mb, ac, ns, ex, eb, nsh, tst, cd] = await Promise.all([
+    const [st, td, bk, mb, ac, ns, ex, eb, tst, cd] = await Promise.all([
       S.sb.from("cal_settings").select("*").eq("owner", me).maybeSingle(),
       S.sb.from("todos").select("*").eq("owner", me).order("created_at"),
       S.sb.from("bookings").select("*").or(`owner.eq.${me},booker.eq.${me}`).gte("end_at", since).order("start_at"),
@@ -1358,8 +1358,8 @@ window.KONTAKT_CONFIG = {
       // iPhone-Kalender und geteilte Next Steps (fehlen, solange die zugehörige SQL-Datei noch nicht ausgeführt ist)
       S.sb.from("ext_cal").select("id, name, url, show_details, last_sync, last_status, events, pending").eq("owner", me).order("created_at"),
       S.sb.from("ext_busy").select("cal_id, start_at, end_at, title, location").eq("owner", me).gte("end_at", addDays(new Date(), -7).toISOString()).order("start_at"),
-      S.sb.from("ns_share").select("*"),
-      S.sb.rpc("shared_next_steps", { p_days: 7 }),
+      // Next Steps der Listen, die für mich freigegeben sind (die Datenbank liefert nur, was ich sehen darf)
+      S.sb.from("contacts").select("owner, name, next_step, next_date").neq("owner", me).not("next_date", "is", null).lte("next_date", isoDate(addDays(new Date(), 7))).order("next_date"),
       S.sb.from("caldav_account").select("apple_id, calendars, default_url").eq("owner", me).maybeSingle(),
     ]);
     const err = [st, td, bk, mb, ac, ns].find((r) => r.error);
@@ -1368,10 +1368,10 @@ window.KONTAKT_CONFIG = {
     C.dayHours = st.data && st.data.day_hours ? st.data.day_hours : C.dayHours || null;
     C.todos = td.data || []; C.bookings = bk.data || []; C.members = mb.data || []; C.access = ac.data || []; C.nextSteps = ns.data || [];
     C.exts = ex.error ? null : ex.data || [];
-    C.nsShare = nsh.error ? null : nsh.data || [];
     // Direkt in iCloud eintragen: null = noch nicht eingerichtet (SQL fehlt), false = nicht verbunden
     C.caldav = cd.error ? null : cd.data || false;
-    C.teamSteps = tst.error ? null : tst.data || [];
+    const ownerName = (id) => ((S.team || []).find((m) => m.id === id) || C.members.find((m) => m.id === id) || {}).name;
+    C.teamSteps = tst.error ? null : (tst.data || []).map((x) => ({ owner: x.owner, owner_name: ownerName(x.owner), contact_name: x.name, next_step: x.next_step, next_date: x.next_date }));
     C.extBusy = eb.error ? [] : eb.data || [];
     C.loaded = true;
     if (!C.channel) {
@@ -1778,11 +1778,6 @@ window.KONTAKT_CONFIG = {
         </section>
         ${extCard()}
         ${caldavCard()}
-        <section class="set-card"><h3 class="section-title">Wer sieht deine Next Steps?</h3>
-          ${C.nsShare ? `<p class="hint">Diese Personen sehen deine fälligen und in den nächsten 7 Tagen anstehenden Next Steps auf ihrer Startseite, zum Beispiel deine Führungskraft. Sie sehen nur Name, Next Step und Datum, nicht deine ganze Liste.</p>
-          <div class="share-list">${others.map((m) => `<label class="share-item"><input type="checkbox" data-nsshare="${m.id}" ${C.nsShare.some((a) => a.owner === S.me.id && a.viewer === m.id) ? "checked" : ""}> ${esc(m.name)}</label>`).join("") || `<p class="hint">Es gibt noch keine weiteren freigeschalteten Mitglieder.</p>`}</div>`
-          : `<p class="hint">Damit du deine Next Steps teilen kannst, muss einmal <strong>next-steps-teilen.sql</strong> in Supabase ausgeführt werden.</p>`}
-        </section>
         <section class="set-card"><h3 class="section-title">Wer darf sehen, wann du Zeit hast, und dich buchen?</h3><p class="hint">Diese Personen sehen nur, wann du frei bist, nicht was du vorhast.</p>
           <div class="share-list">${others.map((m) => `<label class="share-item"><input type="checkbox" data-calshare="${m.id}" ${shared.has(m.id) ? "checked" : ""}> ${esc(m.name)}</label>`).join("") || `<p class="hint">Es gibt noch keine weiteren freigeschalteten Mitglieder.</p>`}</div>
         </section>
@@ -1978,14 +1973,6 @@ window.KONTAKT_CONFIG = {
       x.name = t.value.trim(); return toast("Name gespeichert.");
     }
     if (t.id === "setWeeks") { C.settings.weeks = Number(t.value); await saveCalSettings(); return; }
-    if (d.nsshare) {
-      const q = t.checked ? S.sb.from("ns_share").insert({ owner: S.me.id, viewer: d.nsshare }) : S.sb.from("ns_share").delete().eq("owner", S.me.id).eq("viewer", d.nsshare);
-      const { error } = await q;
-      if (error) { toast(error.message); t.checked = !t.checked; return; }
-      const { data } = await S.sb.from("ns_share").select("*"); C.nsShare = data || C.nsShare;
-      const name = (C.members.find((m) => m.id === d.nsshare) || {}).name;
-      return toast(t.checked ? `${name} sieht jetzt deine Next Steps auf der Startseite.` : `${name} sieht deine Next Steps nicht mehr.`);
-    }
     if (d.calshare) {
       const q = t.checked ? S.sb.from("cal_access").insert({ owner: S.me.id, viewer: d.calshare }) : S.sb.from("cal_access").delete().eq("owner", S.me.id).eq("viewer", d.calshare);
       const { error } = await q;
@@ -2165,7 +2152,7 @@ window.KONTAKT_CONFIG = {
 
     // Next Steps im Team, nach Personen
     const ts = C.teamSteps || [];
-    const sharers = (C.nsShare || []).filter((a) => a.viewer === S.me.id).length;
+    const sharers = (S.team || []).length;
     let teamCard = "";
     if (ts.length || sharers) {
       const people = new Map();
