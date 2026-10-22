@@ -817,6 +817,7 @@ window.KONTAKT_CONFIG = {
     else if (h === "team") { await openOwner(me.id, displayName(me), true); S.view = "team"; renderAll(); }
     else if (h === "verwaltung" && me.role === "admin") { await openOwner(me.id, displayName(me), true); await showAdmin(); }
     else if (h === "liste") await openOwner(me.id, displayName(me), true);
+    else if (h === "todo" || h === "neues-todo") { await openOwner(me.id, displayName(me), true); await openCal("todos"); $("tdTitle")?.focus(); }
     else await openHome();
   }
 
