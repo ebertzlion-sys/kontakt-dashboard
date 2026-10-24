@@ -363,12 +363,13 @@ td input:disabled, td select:disabled { color: var(--fg); opacity: 1; }
 
 /* Zeitstrahl */
 .wb-tl { padding: 12px 14px 10px; display: flex; flex-direction: column; gap: 6px; }
-.wb-tl-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.wb-tl-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.wb-tl-h b { font-family: var(--font-display); font-size: 15px; color: var(--fg); margin-right: 6px; }
 .wb-tl-h .linkbtn { font-family: var(--font-body); text-transform: none; letter-spacing: 0; font-size: 12.5px; text-decoration: none; font-weight: 600; }
 .wb-tl-set { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--fg); text-transform: none; letter-spacing: 0; font-family: var(--font-body); }
 .wb-tl-set select { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 3px 6px; }
-.wb-track { position: relative; height: 40px; background: var(--surface-2); border-radius: 8px; margin-top: 14px; }
-.wb-blk { position: absolute; top: 4px; bottom: 4px; border-radius: 6px; padding: 3px 7px; font-size: 11.5px; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 6px; border: 1px solid var(--l-kunden); background: var(--surface); color: var(--l-kunden); }
+.wb-track { position: relative; height: 34px; background: var(--surface-2); border-radius: 8px; margin-top: 12px; }
+.wb-blk { position: absolute; top: 4px; bottom: 4px; border-radius: 6px; padding: 2px 7px; font-size: 11.5px; line-height: 20px; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 6px; border: 1px solid var(--l-kunden); background: var(--surface); color: var(--l-kunden); }
 .wb-blk.book { border-color: var(--accent); color: var(--accent); }
 .wb-blk.todo { border-style: dashed; border-color: var(--muted); color: var(--muted); }
 .wb-now { position: absolute; top: -6px; bottom: -6px; width: 2px; background: var(--danger); }
@@ -380,28 +381,26 @@ td input:disabled, td select:disabled { color: var(--fg); opacity: 1; }
 .wb-allday { font-size: 12px; color: var(--muted); }
 
 /* Termine der Woche */
-.wb-legend { display: flex; gap: 12px; font-size: 12px; color: var(--muted); align-items: center; flex-wrap: wrap; }
-.wb-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; border: 2px solid var(--c); }
-.wb-week-sc { overflow-x: auto; padding: 0 12px 12px; }
-.wb-week { display: grid; grid-template-columns: repeat(7, minmax(96px, 1fr)); gap: 6px; }
-.wb-day { background: var(--bg); border-radius: 10px; padding: 7px; display: flex; flex-direction: column; gap: 5px; min-width: 0; min-height: 110px; }
-.wb-day.today { background: var(--accent-soft); }
-.wb-day.past { opacity: .6; }
-.wb-day.we { background: var(--surface-2); }
-.wb-day.we.today { background: var(--accent-soft); }
-.wb-day h4 { margin: 0; display: flex; justify-content: space-between; align-items: baseline; font-size: 12.5px; font-weight: 600; }
-.wb-day h4 small { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); font-weight: 500; }
+.wb-week-sc { overflow-x: auto; padding: 0 8px 10px; }
+.wb-week { display: grid; grid-template-columns: repeat(7, minmax(96px, 1fr)); }
+.wb-day { padding: 4px 8px 6px; display: flex; flex-direction: column; gap: 4px; min-width: 0; border-left: 1px solid var(--line); }
+.wb-day:first-child { border-left: 0; }
+.wb-day.today { background: var(--accent-soft); border-radius: 8px; border-left-color: transparent; }
+.wb-day.today + .wb-day { border-left-color: transparent; }
+.wb-day.past { opacity: .5; }
+.wb-day h4 { margin: 0 0 2px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.wb-day.we h4 { color: var(--muted); font-weight: 500; }
 .wb-day.today h4 { color: var(--accent); }
-.wb-ev { background: var(--surface); border-radius: 6px; padding: 4px 6px; display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--line); border-left: 3px solid var(--l-kunden); }
+.wb-ev { font-size: 12px; line-height: 1.3; padding-left: 7px; border-left: 2px solid var(--l-kunden); overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .wb-ev b { font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; color: var(--muted); }
-.wb-ev span { font-size: 12px; line-height: 1.25; overflow-wrap: anywhere; }
 .wb-ev.book { border-left-color: var(--accent); }
-.wb-day .none { font-size: 12px; color: var(--muted); }
+.wb-evmore { border: 0; background: none; padding: 0 0 0 9px; text-align: left; font-size: 11.5px; color: var(--accent); font-weight: 600; }
+.wb-day .none { font-size: 12px; color: var(--muted); padding-left: 2px; }
 
 /* Raster unten */
 .wb-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
 .wb-grid.two { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
-@media (max-width: 1180px) { .wb-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+@media (max-width: 1180px) and (min-width: 701px) { .wb-grid:not(.two) { display: block; columns: 2; column-gap: 14px; } .wb-grid:not(.two) > * { break-inside: avoid; margin-bottom: 14px; } }
 @media (max-width: 700px) { .wb-grid, .wb-grid.two { grid-template-columns: minmax(0, 1fr); } }
 .wb-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 
@@ -420,7 +419,7 @@ td input:disabled, td select:disabled { color: var(--fg); opacity: 1; }
 .wb-tx span { color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
 button.wb-tx:hover strong { color: var(--accent); }
 .wb-ic { display: flex; gap: 4px; flex: none; }
-.wb-ic button { width: 28px; height: 26px; border-radius: 7px; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; font-size: 12px; color: var(--muted); padding: 0; }
+.wb-ic button { width: 28px; height: 26px; border-radius: 7px; border: 1px solid transparent; background: var(--surface-2); display: grid; place-items: center; font-size: 12px; color: var(--muted); padding: 0; }
 .wb-ic button:hover { border-color: var(--accent); color: var(--accent); }
 .wb-ic button.ok { color: var(--l-kunden); }
 .wb-row.open { background: var(--accent-soft); }
@@ -2102,9 +2101,9 @@ window.KONTAKT_CONFIG = {
     const nowMin = now.getHours() * 60 + now.getMinutes();
     const hourOpts = (from, to, sel) => Array.from({ length: to - from + 1 }, (_, i) => from + i).map((h) => `<option value="${h}" ${h === sel ? "selected" : ""}>${h} Uhr</option>`).join("");
     const timeline = `<section class="wb-card wb-tl" aria-label="Heute">
-      <div class="wb-tl-h"><span>Heute, ${h0} bis ${h1} Uhr</span>
+      <div class="wb-tl-h"><span><b>Heute</b> ${h0}–${h1} Uhr</span>
         ${H.tlEdit ? `<span class="wb-tl-set">Arbeitszeit <select id="tlStart" aria-label="Beginn">${hourOpts(0, 23, wh.start)}</select> bis <select id="tlEnd" aria-label="Ende">${hourOpts(1, 24, wh.end)}</select><button class="btn primary" type="button" data-hact="tlsave">Speichern</button><button class="btn ghost" type="button" data-hact="tledit">Abbrechen</button></span>`
-          : `<span>${C.loaded ? (() => { const a = timed.filter((x) => x.kind !== "todo").length, b = timed.length - a; return `${a} ${a === 1 ? "Termin" : "Termine"} · ${b} ${b === 1 ? "To-Do" : "To-Dos"} eingeplant · `; })() : ""}<button class="linkbtn" type="button" data-hact="tledit">Arbeitszeit anpassen</button></span>`}</div>
+          : `<button class="linkbtn" type="button" data-hact="tledit" title="Arbeitszeit für den Zeitstrahl einstellen">Anpassen</button>`}</div>
       <div class="wb-track">
         ${timed.map((x) => `<span class="wb-blk ${x.kind}" style="left:${pos(x.s)}%;width:${Math.max(0.6, pos(x.e) - pos(x.s))}%" title="${esc(hm(x.s) + "–" + hm(x.e) + " " + x.title)}">${esc(hm(x.s) + " " + x.title)}</span>`).join("")}
         ${nowMin >= h0 * 60 && nowMin <= h1 * 60 ? `<span class="wb-now" style="left:${pos(now)}%"></span>` : ""}
@@ -2118,14 +2117,13 @@ window.KONTAKT_CONFIG = {
     const mon = mondayOf(now);
     const week = Array.from({ length: 7 }, (_, i) => addDays(mon, i));
     const weekEv = C.loaded ? eventsBetween(mon, addDays(mon, 7)) : [];
-    const weekCard = `<section class="wb-card"><div class="wb-ch"><h3>Termine der Woche</h3>
-        <span class="wb-legend"><span><i style="--c: var(--l-kunden)"></i>Kalender</span><span><i style="--c: var(--accent)"></i>Buchung</span><button class="linkbtn" type="button" data-hgo="woche">Zum Kalender</button><button class="linkbtn" type="button" data-hgo="buchen">Zeit buchen</button></span></div>
+    const weekCard = `<section class="wb-card"><div class="wb-ch"><h3>Diese Woche</h3><button class="linkbtn" type="button" data-hgo="woche">Zum Kalender</button></div>
       <div class="wb-week-sc"><div class="wb-week">${week.map((d) => {
         const de = isoDate(d), next = addDays(d, 1);
         const ev = weekEv.filter((x) => x.s < next && x.e > d);
         const cls = [de === today ? "today" : de < today ? "past" : "", weekday(d) >= 6 ? "we" : ""].join(" ");
-        return `<div class="wb-day ${cls}"><h4>${DAYS[weekday(d) - 1]} ${d.getDate()}.${de === today ? " heute" : ""}<small>${C.loaded ? ev.length : ""}</small></h4>
-          ${!C.loaded ? "" : ev.length ? ev.map((x) => `<div class="wb-ev ${x.kind}" title="${esc(x.sub)}"><b>${x.allDay ? "ganztägig" : hm(x.s)}</b><span>${esc(x.title)}</span></div>`).join("") : `<span class="none">${weekday(d) >= 6 ? "frei" : "keine Termine"}</span>`}</div>`;
+        return `<div class="wb-day ${cls}"><h4>${DAYS[weekday(d) - 1]} ${d.getDate()}.${de === today ? " heute" : ""}</h4>
+          ${!C.loaded ? "" : ev.length ? ev.slice(0, 3).map((x) => `<div class="wb-ev ${x.kind}" title="${esc((x.allDay ? "ganztägig" : hm(x.s) + "–" + hm(x.e)) + " · " + x.title + " · " + x.sub)}"><b>${x.allDay ? "ganzt." : hm(x.s)}</b> ${esc(x.title)}</div>`).join("") + (ev.length > 3 ? `<button type="button" class="wb-evmore" data-hgo="woche">+${ev.length - 3} weitere</button>` : "") : `<span class="none">–</span>`}</div>`;
       }).join("")}</div></div></section>`;
 
     // Next Steps kompakt
