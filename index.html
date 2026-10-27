@@ -51,18 +51,7 @@
   --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
   --radius: 8px;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0a1730; --surface: #11234a; --surface-2: #1a2f5c; --fg: #eef3fb; --muted: #9fb0cf; --line: #24396a;
-    --accent: #8fb3ff; --accent-fg: #0a1730; --accent-soft: #1d3a73;
-    --warn: #ffb35c; --warn-soft: #3b2a14; --danger: #ff8a8a; --danger-soft: #45202a;
-    --l-haupt: #8fb3ff; --l-pp: #c3a8ff; --l-l30: #ffb35c; --l-kunden: #7fd3a7;
-    --lc-teal: #67d4e8; --lc-rose: #f9a8d4; --lc-olive: #a3e07a; --lc-rust: #ffae80; --lc-violet: #c4b5fd; --lc-sky: #7dd3fc; --lc-gold: #f5d06b; --lc-slate: #cbd5e1;
-    --nav-bg: #071228; --nav-solid: #071228; --nav-line: #1a2f5c; --head: #16295a; --th-bg: #071228; --th-fg: #c9d3e6;
-    --shadow: 0 12px 40px rgba(0, 0, 0, .5);
-    color-scheme: dark;
-  }
-}
+/* Immer das helle tecis-Design (Variante 2b), auch wenn das Gerät auf Dunkelmodus steht */
 :root[data-theme="dark"] {
   --bg: #0a1730; --surface: #11234a; --surface-2: #1a2f5c; --fg: #eef3fb; --muted: #9fb0cf; --line: #24396a;
   --accent: #8fb3ff; --accent-fg: #0a1730; --accent-soft: #1d3a73;
