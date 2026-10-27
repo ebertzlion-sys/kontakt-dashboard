@@ -31,6 +31,9 @@
   --l-pp: #5b4bb7;
   --l-l30: #b06a00;
   --l-kunden: #1f7a52;
+  /* Farben für eigene Listen */
+  --lc-teal: #0e7490; --lc-rose: #be185d; --lc-olive: #4d7c0f; --lc-rust: #c2410c;
+  --lc-violet: #6d28d9; --lc-sky: #0369a1; --lc-gold: #a16207; --lc-slate: #475569;
   --nav-bg: linear-gradient(180deg, #0a1f44 0%, #12336b 100%);
   --nav-solid: #0a1f44;
   --nav-fg: #ffffff;
@@ -54,6 +57,7 @@
     --accent: #8fb3ff; --accent-fg: #0a1730; --accent-soft: #1d3a73;
     --warn: #ffb35c; --warn-soft: #3b2a14; --danger: #ff8a8a; --danger-soft: #45202a;
     --l-haupt: #8fb3ff; --l-pp: #c3a8ff; --l-l30: #ffb35c; --l-kunden: #7fd3a7;
+    --lc-teal: #67d4e8; --lc-rose: #f9a8d4; --lc-olive: #a3e07a; --lc-rust: #ffae80; --lc-violet: #c4b5fd; --lc-sky: #7dd3fc; --lc-gold: #f5d06b; --lc-slate: #cbd5e1;
     --nav-bg: #071228; --nav-solid: #071228; --nav-line: #1a2f5c; --head: #16295a; --th-bg: #071228; --th-fg: #c9d3e6;
     --shadow: 0 12px 40px rgba(0, 0, 0, .5);
     color-scheme: dark;
@@ -64,6 +68,7 @@
   --accent: #8fb3ff; --accent-fg: #0a1730; --accent-soft: #1d3a73;
   --warn: #ffb35c; --warn-soft: #3b2a14; --danger: #ff8a8a; --danger-soft: #45202a;
   --l-haupt: #8fb3ff; --l-pp: #c3a8ff; --l-l30: #ffb35c; --l-kunden: #7fd3a7;
+  --lc-teal: #67d4e8; --lc-rose: #f9a8d4; --lc-olive: #a3e07a; --lc-rust: #ffae80; --lc-violet: #c4b5fd; --lc-sky: #7dd3fc; --lc-gold: #f5d06b; --lc-slate: #cbd5e1;
   --nav-bg: #071228; --nav-solid: #071228; --nav-line: #1a2f5c; --head: #16295a; --th-bg: #071228; --th-fg: #c9d3e6;
   --shadow: 0 12px 40px rgba(0, 0, 0, .5);
   color-scheme: dark;
@@ -191,6 +196,75 @@ td.act { padding: 0 6px; }
 .frow .scopes { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .frow .type { font-size: 12px; color: var(--muted); }
 .frow input[type="text"] { border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; background: var(--surface); width: 100%; }
+/* Einstellungen: Anleitung mit Bildern */
+#settingsView { max-width: 1100px; }
+.conn-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.conn-card { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); color: inherit; text-decoration: none; }
+.conn-card:hover { border-color: var(--accent); }
+.conn-card > div { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.conn-card span:not(.conn-ic):not(.pill) { color: var(--muted); font-size: 12.5px; }
+.conn-card em { font-style: normal; font-size: 12px; color: var(--fg); overflow-wrap: anywhere; }
+.conn-ic { width: 32px; height: 32px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-weight: 700; flex: none; }
+.guide { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.guide-step { display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; background: var(--bg); }
+.guide-step figure { margin: 0; display: flex; justify-content: center; }
+.guide-text { position: relative; padding-left: 34px; }
+.guide-n { position: absolute; left: 0; top: 0; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: var(--accent-fg); display: grid; place-items: center; font-weight: 600; font-size: 12.5px; }
+.guide-text h4 { margin: 2px 0 4px; font-size: 14px; }
+.guide-text p { margin: 0; font-size: 13px; color: var(--muted); }
+.guide-text strong { color: var(--fg); font-weight: 600; }
+svg.il { width: 100%; max-width: 170px; height: auto; display: block; filter: drop-shadow(0 6px 14px rgba(8, 24, 56, .14)); }
+svg.il text { font-family: -apple-system, "SF Pro Text", var(--font-body); }
+.il-frame { fill: #1b2230; }
+.il-screen { fill: var(--surface); }
+.il-t { fill: var(--fg); }
+.il-t-fill { fill: var(--fg); }
+.il-m { fill: var(--muted); }
+.il-line { fill: var(--line); }
+.il-sep { stroke: var(--line); stroke-width: 1; }
+.il-row, .il-pop { fill: var(--surface-2); }
+.il-pop { stroke: var(--line); }
+.il-card { fill: var(--bg); stroke: var(--line); }
+.il-input { fill: var(--surface); stroke: var(--line); }
+.il-check { fill: var(--surface); stroke: var(--muted); }
+.il-btn { fill: var(--accent); }
+.il-btn + text, .il-btn-blue + text { fill: #fff; }
+.il-btn-blue { fill: #0a84ff; }
+.il-blue { fill: #0a84ff; }
+.il-red { fill: #ff3b30; }
+.il-red-fill { fill: #ff3b30; }
+.il-white { fill: #fff; }
+.il-white-fill { fill: #fff; }
+.il-white-stroke { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; }
+.il-today { fill: #fff; }
+.il-on { fill: #34c759; }
+.il-info { fill: none; stroke: #0a84ff; stroke-width: 1.2; }
+.il-ev { fill: rgba(10, 132, 255, .18); }
+.il-ev2 { fill: rgba(52, 199, 89, .2); }
+.il-c1 { fill: #34c759; } .il-c2 { fill: #0a84ff; } .il-c3 { fill: #ff9500; } .il-c4 { fill: #af52de; }
+.il-apple { fill: #8e8e93; }
+.il-mono { fill: var(--fg); font-family: var(--font-mono) !important; }
+.il-nav { fill: #0a1f44; }
+.il-nav-t { fill: #fff; font-weight: 600; }
+.il-hl { fill: none; stroke: #ff9f0a; stroke-width: 2.2; }
+.il-tap { fill: rgba(255, 159, 10, .35); stroke: #ff9f0a; stroke-width: 1.2; }
+.set-card.flash { box-shadow: 0 0 0 3px var(--accent); transition: box-shadow .3s; }
+.set-card { scroll-margin-top: 90px; }
+@media (min-width: 1024px) { .set-card { scroll-margin-top: 16px; } }
+/* Eigene Listen */
+.lrow-name { display: flex; gap: 8px; align-items: center; min-width: 0; }
+.lrow-name input.lshort { width: 64px; flex: none; font-family: var(--font-mono); text-transform: uppercase; }
+.ldot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex: none; }
+.swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+.swatch { position: relative; display: inline-flex; cursor: pointer; }
+.swatch input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.swatch span { width: 26px; height: 26px; border-radius: 50%; background: var(--c); border: 3px solid var(--surface); box-shadow: 0 0 0 1px var(--line); }
+.swatch input:checked + span { box-shadow: 0 0 0 2px var(--c); }
+.swatch input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.swatch em { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.tab.add-list { opacity: .8; font-weight: 500; }
+.tab.add-list:hover { opacity: 1; }
+.tab.add-list .plus { width: 16px; height: 16px; border-radius: 50%; border: 1px dashed currentColor; display: inline-grid; place-items: center; font-size: 12px; line-height: 1; }
 .scopes label { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; }
 textarea.paste { font-family: var(--font-mono); font-size: 12px; min-height: 180px; }
 .preview { background: var(--surface-2); border-radius: var(--radius); padding: 10px 12px; font-size: 13px; }
@@ -542,6 +616,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 <main class="wrap" id="teamView" hidden></main>
 <main class="wrap" id="calView" hidden></main>
 <main class="wrap" id="adminView" hidden></main>
+<main class="wrap" id="settingsView" hidden></main>
 </div>
 
 <datalist id="dl-soz"></datalist>
@@ -562,18 +637,22 @@ window.KONTAKT_CONFIG = {
 (() => {
   // ---------- Konfiguration ----------
   const CFG = window.KONTAKT_CONFIG || {};
-  const LISTS = [
+  const BASE_LISTS = [
     { id: "haupt", label: "Hauptliste", short: "H" },
     { id: "pp", label: "PP-Liste", short: "PP" },
     { id: "l30", label: "30er Liste", short: "30" },
     { id: "kunden", label: "Kundenliste", short: "K" },
   ];
+  // Eigene Listen liegen als Einträge mit kind "liste" in field_settings.fields, damit keine Datenbankänderung nötig ist.
+  let LISTS = [...BASE_LISTS];
+  const LIST_COLORS = { teal: "Petrol", rose: "Beere", olive: "Grün", rust: "Orange", violet: "Lila", sky: "Himmelblau", gold: "Gold", slate: "Grau" };
+  const lc = (l) => (l.color ? `var(--lc-${l.color})` : `var(--l-${l.id})`);
   const TYPES = { text: "Text", zahl: "Zahl", datum: "Datum", auswahl: "Auswahl", janein: "Ja/Nein" };
 
   const S = {
     sb: null, session: null, me: null,
     view: "list", owner: null, ownerName: "", canEdit: false,
-    contacts: new Map(), fields: [], loadedContacts: false, channel: null,
+    contacts: new Map(), fields: [], customLists: [], loadedContacts: false, channel: null,
     list: "haupt", q: "", soz: "", sort: "name", dueOnly: false,
     selected: new Set(), panel: null, openId: null,
     team: [], users: [], access: [],
@@ -582,7 +661,17 @@ window.KONTAKT_CONFIG = {
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const today = () => new Date().toISOString().slice(0, 10);
-  const listById = (id) => LISTS.find((l) => l.id === id);
+  const listById = (id) => LISTS.find((l) => l.id === id) || { id, label: "Gelöschte Liste", short: "?" };
+  function setCustomLists(arr) {
+    S.customLists = arr;
+    LISTS = [...BASE_LISTS, ...arr];
+    if (!LISTS.some((l) => l.id === S.list)) S.list = "haupt";
+  }
+  function splitSettings(all) {
+    const a = Array.isArray(all) ? all : [];
+    S.fields = a.filter((f) => f.kind !== "liste");
+    setCustomLists(a.filter((f) => f.kind === "liste"));
+  }
   const uid8 = () => Math.random().toString(36).slice(2, 10);
   const newId = () => (crypto.randomUUID ? crypto.randomUUID() : "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (c ^ (Math.random() * 16) >> (c / 4)).toString(16)));
   const displayName = (p) => (p && (p.name || p.email)) || "Unbekannt";
@@ -641,7 +730,7 @@ window.KONTAKT_CONFIG = {
   }
   let settingsChain = Promise.resolve();
   function saveSettings() {
-    const body = { owner: S.owner, fields: S.fields.map(({ _t, ...f }) => f), updated_at: new Date().toISOString() };
+    const body = { owner: S.owner, fields: [...S.fields, ...S.customLists].map(({ _t, ...f }) => f), updated_at: new Date().toISOString() };
     settingsChain = settingsChain.then(async () => {
       const { error } = await S.sb.from("field_settings").upsert(body);
       if (error) reportError(error);
@@ -661,7 +750,7 @@ window.KONTAKT_CONFIG = {
   async function openOwner(ownerId, name, canEdit) {
     if (S.channel) { S.sb.removeChannel(S.channel); S.channel = null; }
     S.owner = ownerId; S.ownerName = name; S.canEdit = canEdit;
-    S.contacts = new Map(); S.fields = []; S.loadedContacts = false; S.selected.clear();
+    S.contacts = new Map(); S.fields = []; setCustomLists([]); S.loadedContacts = false; S.selected.clear();
     S.view = "list"; S.list = "haupt"; S.q = ""; S.soz = ""; S.dueOnly = false; $("q").value = "";
     renderAll();
     const [{ data: fs }, rows] = await Promise.all([
@@ -669,7 +758,7 @@ window.KONTAKT_CONFIG = {
       fetchAllContacts(ownerId),
     ]);
     if (S.owner !== ownerId) return;
-    S.fields = fs && Array.isArray(fs.fields) ? fs.fields : [];
+    splitSettings(fs && fs.fields);
     for (const r of rows) S.contacts.set(r.id, fromRow(r));
     S.loadedContacts = true;
     renderAll();
@@ -678,9 +767,9 @@ window.KONTAKT_CONFIG = {
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "contacts", filter: "owner=eq." + ownerId }, onRemote)
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "contacts" }, onRemote)
       .on("postgres_changes", { event: "*", schema: "public", table: "field_settings", filter: "owner=eq." + ownerId }, (pl) => {
-        if (S.fields.some((f) => f._t) || !pl.new || !Array.isArray(pl.new.fields)) return;
-        if (JSON.stringify(pl.new.fields) === JSON.stringify(S.fields)) return;
-        S.fields = pl.new.fields; renderAll();
+        if ([...S.fields, ...S.customLists].some((f) => f._t) || !pl.new || !Array.isArray(pl.new.fields)) return;
+        if (JSON.stringify(pl.new.fields) === JSON.stringify([...S.fields, ...S.customLists])) return;
+        splitSettings(pl.new.fields); renderAll();
       })
       .subscribe();
   }
@@ -754,7 +843,7 @@ window.KONTAKT_CONFIG = {
     c.lists = has ? c.lists.filter((l) => l !== listId) : [...c.lists, listId];
     saveContact(id, 0);
     renderAll();
-    toast(`${c.name || "Kontakt"} ${has ? "aus " + listById(listId).label + " entfernt" : "zur " + listById(listId).label + " hinzugefügt"}.`, () => {
+    toast(`${c.name || "Kontakt"} ${has ? "aus „" + listById(listId).label + "“ entfernt" : "in „" + listById(listId).label + "“ aufgenommen"}.`, () => {
       const cc = S.contacts.get(id); if (!cc) return; cc.lists = before; saveContact(id, 0); renderAll();
     });
   }
@@ -849,6 +938,7 @@ window.KONTAKT_CONFIG = {
     else if (h === "team") { await openOwner(me.id, displayName(me), true); S.view = "team"; renderAll(); }
     else if (h === "verwaltung" && me.role === "admin") { await openOwner(me.id, displayName(me), true); await showAdmin(); }
     else if (h === "liste") await openOwner(me.id, displayName(me), true);
+    else if (h === "einstellungen") await openSettings();
     else if (h === "todo" || h === "neues-todo") { await openOwner(me.id, displayName(me), true); await openCal("todos"); $("tdTitle")?.focus(); }
     else await openHome();
   }
@@ -876,24 +966,27 @@ window.KONTAKT_CONFIG = {
       list: '<path d="M5 6h14M5 12h14M5 18h14"/>',
       cal: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
       team: '<circle cx="9" cy="9" r="3.2"/><circle cx="17" cy="10" r="2.5"/><path d="M3 19c.8-3 3.2-4.5 6-4.5s5.2 1.5 6 4.5M15 15.3c2.5-.3 4.5 1 5.2 3.7"/>',
+      settings: '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>',
       admin: '<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>',
     };
     const today = isoDate(new Date());
     const due = isMine ? [...S.contacts.values()].filter((c) => c.nextDate && c.nextDate <= today).length : 0;
     const b = (v, label, badge) => `<button type="button" data-view="${v}" aria-pressed="${S.view === v && (v !== "list" || isMine)}"><svg viewBox="0 0 24 24" aria-hidden="true">${ICON[v]}</svg>${label}${badge ? `<em aria-label="${badge} fällig">${badge}</em>` : ""}</button>`;
-    $("views").innerHTML = b("home", "Start", due) + b("list", "Meine Liste") + b("cal", "Kalender") + b("team", `Team${S.team.length ? " (" + S.team.length + ")" : ""}`) + (S.me.role === "admin" ? b("admin", "Verwaltung") : "");
+    $("views").innerHTML = b("home", "Start", due) + b("list", "Meine Liste") + b("cal", "Kalender") + b("team", `Team${S.team.length ? " (" + S.team.length + ")" : ""}`) + b("settings", "Einstellungen") + (S.me.role === "admin" ? b("admin", "Verwaltung") : "");
     $("listView").hidden = S.view !== "list";
     $("homeView").hidden = S.view !== "home";
     $("teamView").hidden = S.view !== "team";
     $("adminView").hidden = S.view !== "admin";
     $("calView").hidden = S.view !== "cal";
+    $("settingsView").hidden = S.view !== "settings";
     $("tabs").hidden = S.view !== "list";
   }
   function renderTabs() {
-    $("tabs").innerHTML = LISTS.map((l) => `<button class="tab" role="tab" type="button" data-list="${l.id}" aria-selected="${l.id === S.list}" style="--c: var(--l-${l.id})"><span class="dot"></span>${esc(l.label)}<span class="n">${S.loadedContacts ? inList(l.id).length : "–"}</span></button>`).join("");
+    $("tabs").innerHTML = LISTS.map((l) => `<button class="tab" role="tab" type="button" data-list="${l.id}" aria-selected="${l.id === S.list}" style="--c: ${lc(l)}"><span class="dot"></span>${esc(l.label)}<span class="n">${S.loadedContacts ? inList(l.id).length : "–"}</span></button>`).join("")
+      + (S.canEdit && S.loadedContacts ? `<button class="tab add-list" type="button" data-addlist="1" title="Eigene Liste anlegen"><span class="plus" aria-hidden="true">+</span>Neue Liste</button>` : "");
     const all = S.contacts.size, due = [...S.contacts.values()].filter(isDue).length;
     const whose = S.owner === S.me.id ? "Deine Liste" : "Liste von " + S.ownerName;
-    $("summary").textContent = S.view === "team" ? "Listen, die mit dir geteilt sind" : S.view === "admin" ? "Konten und Freigaben" : S.view === "cal" ? "To-Dos, Wochenplanung und Termine" : S.view === "home" ? "Das Wichtigste auf einen Blick" : !S.loadedContacts ? "Kontakte werden geladen …" :
+    $("summary").textContent = S.view === "team" ? "Listen, die mit dir geteilt sind" : S.view === "admin" ? "Konten und Freigaben" : S.view === "cal" ? "To-Dos, Wochenplanung und Termine" : S.view === "home" ? "Das Wichtigste auf einen Blick" : S.view === "settings" ? "Kalender verbinden und Listen" : !S.loadedContacts ? "Kontakte werden geladen …" :
       `${whose} · ${all} ${all === 1 ? "Kontakt" : "Kontakte"} · ${due} ${due === 1 ? "Next Step fällig" : "Next Steps fällig"}`;
   }
   function renderToolbar() {
@@ -942,6 +1035,13 @@ window.KONTAKT_CONFIG = {
     if (!S.loadedContacts) { box.innerHTML = `<div class="empty"><h2>Kontakte werden geladen …</h2><p>Hier erscheint gleich die Liste mit Name, Soziotop, Beruf, Informationen und Next Step.</p></div>`; return; }
     const rows = visibleRows();
     const custom = fieldsFor(S.list);
+    // Gleiche Ansicht neu zeichnen (z. B. nach Klick auf einen Listen-Knopf): Scrollposition und Fokus behalten, statt nach oben zu springen.
+    const viewKey = [S.owner, S.list, S.sort, S.q, S.soz, S.dueOnly].join("|");
+    const same = S.tableKey === viewKey;
+    S.tableKey = viewKey;
+    const keepPos = same ? { top: box.scrollTop, left: box.scrollLeft, y: window.scrollY, n: box.querySelectorAll("tbody tr").length } : null;
+    const fa = document.activeElement;
+    const keepFocus = same && fa && box.contains(fa) && fa.dataset.toggle ? `[data-toggle="${fa.dataset.toggle}"][data-list="${fa.dataset.list}"]` : null;
     const label = listById(S.list).label;
     if (!rows.length) {
       const noneInList = inList(S.list).length === 0;
@@ -964,7 +1064,7 @@ window.KONTAKT_CONFIG = {
         <td class="rn sticky1">${i + 1}</td>
         <td class="check sticky2"><input type="checkbox" data-sel="${id}" ${S.selected.has(id) ? "checked" : ""} aria-label="Auswählen"></td>
         <td class="w-name sticky3">${cellInput(c, id, "name")}</td>
-        <td><div class="lists">${LISTS.map((l) => `<button type="button" class="lchip" style="--c: var(--l-${l.id})" data-toggle="${id}" data-list="${l.id}" aria-pressed="${c.lists.includes(l.id)}" title="${esc(l.label)}" ${dis}>${l.short}</button>`).join("")}</div></td>
+        <td><div class="lists">${LISTS.map((l) => `<button type="button" class="lchip" style="--c: ${lc(l)}" data-toggle="${id}" data-list="${l.id}" aria-pressed="${c.lists.includes(l.id)}" title="${esc(l.label)}" ${dis}>${esc(l.short)}</button>`).join("")}</div></td>
         <td class="w-soz">${cellInput(c, id, "soziotop")}</td>
         <td class="w-beruf">${cellInput(c, id, "beruf")}</td>
         <td class="w-info">${cellInput(c, id, "info")}</td>
@@ -978,14 +1078,20 @@ window.KONTAKT_CONFIG = {
     // Große Listen in Etappen aufbauen, damit die Seite sofort reagiert.
     const FIRST = 80, STEP = 150;
     const token = (S.tableToken = (S.tableToken || 0) + 1);
-    box.innerHTML = `<table><thead>${head}</thead><tbody>${rows.slice(0, FIRST).map(rowHtml).join("")}</tbody></table>`;
+    const first = keepPos ? Math.max(FIRST, keepPos.n) : FIRST;
+    box.innerHTML = `<table><thead>${head}</thead><tbody>${rows.slice(0, first).map(rowHtml).join("")}</tbody></table>`;
+    if (keepPos) {
+      box.scrollTop = keepPos.top; box.scrollLeft = keepPos.left;
+      if (window.scrollY !== keepPos.y) window.scrollTo(0, keepPos.y);
+      if (keepFocus) box.querySelector(keepFocus)?.focus({ preventScroll: true });
+    }
     const tb = box.querySelector("tbody");
     const more = (from) => {
       if (token !== S.tableToken || from >= rows.length) return;
       tb.insertAdjacentHTML("beforeend", rows.slice(from, from + STEP).map((c, j) => rowHtml(c, from + j)).join(""));
       setTimeout(() => more(from + STEP), 16);
     };
-    if (rows.length > FIRST) setTimeout(() => more(FIRST), 30);
+    if (rows.length > first) setTimeout(() => more(first), 30);
   }
   function renderTeam() {
     const v = $("teamView");
@@ -1030,6 +1136,7 @@ window.KONTAKT_CONFIG = {
     else if (S.view === "admin") renderAdmin();
     else if (S.view === "cal") renderCal();
     else if (S.view === "home") renderHome();
+    else if (S.view === "settings") renderSettings();
     if (keep) {
       const el = document.querySelector(`#tableBox [data-id="${keep.id}"][data-f="${CSS.escape(keep.f)}"]`);
       if (el) { el.focus(); try { if (keep.s != null) el.setSelectionRange(keep.s, keep.e); } catch (e) {} }
@@ -1048,6 +1155,7 @@ window.KONTAKT_CONFIG = {
     if (S.panel === "contact") html = contactPanel();
     else if (S.panel === "fields") html = fieldsPanel();
     else if (S.panel === "import") html = importPanel();
+    else if (S.panel === "lists") html = listsPanel();
     else { host.innerHTML = ""; return; }
     const scroll = host.querySelector(".drawer-body")?.scrollTop || 0;
     host.innerHTML = `<div class="scrim" data-act="close"></div><aside class="drawer" role="dialog" aria-modal="true">${html}</aside>`;
@@ -1089,7 +1197,7 @@ window.KONTAKT_CONFIG = {
         ${custom.length ? `<h3 class="section-title">Eigene Felder</h3>` + custom.map((f) => dField(c, id, "c:" + f.id, f.label, f)).join("") : ""}
         <h3 class="section-title">Listen</h3>
         ${S.canEdit ? `<p class="hint">Antippen, um den Kontakt in eine Liste aufzunehmen oder herauszunehmen. Ein Kontakt kann in mehreren Listen stehen.</p>` : ""}
-        <div class="lists" style="padding:0;flex-wrap:wrap">${LISTS.map((l) => `<button type="button" class="lchip wide" style="--c: var(--l-${l.id})" data-toggle="${id}" data-list="${l.id}" aria-pressed="${c.lists.includes(l.id)}" ${dis}>${esc(l.label)}</button>`).join("")}</div>
+        <div class="lists" style="padding:0;flex-wrap:wrap">${LISTS.map((l) => `<button type="button" class="lchip wide" style="--c: ${lc(l)}" data-toggle="${id}" data-list="${l.id}" aria-pressed="${c.lists.includes(l.id)}" ${dis}>${esc(l.label)}</button>`).join("")}</div>
         <p class="meta">Angelegt ${fmt(c.created)} · Bearbeitet ${fmt(c.updated)}</p>
       </div>
       <div class="drawer-foot">${S.canEdit ? `<button class="btn danger" type="button" data-del="${id}">Kontakt löschen</button>` : ""}<span class="spacer"></span><button class="btn primary" type="button" data-act="close">Fertig</button></div>`;
@@ -1117,6 +1225,41 @@ window.KONTAKT_CONFIG = {
         <h3 class="section-title">Eigene Felder (${S.fields.length})</h3>
         ${rows || `<p class="hint">Noch keine eigenen Felder.</p>`}
       </div>`;
+  }
+  function listsPanel() {
+    const swatches = (name, cur, attr) => `<div class="swatches" role="radiogroup" aria-label="Farbe">${Object.entries(LIST_COLORS).map(([k, v]) =>
+      `<label class="swatch" title="${v}" style="--c: var(--lc-${k})"><input type="radio" name="${name}" value="${k}" ${k === cur ? "checked" : ""} ${attr}><span></span><em>${v}</em></label>`).join("")}</div>`;
+    const used = new Set(S.customLists.map((l) => l.color));
+    const nextColor = Object.keys(LIST_COLORS).find((k) => !used.has(k)) || "teal";
+    const rows = S.customLists.map((l) => {
+      const n = inList(l.id).length;
+      return `<div class="frow lrow" style="--c: ${lc(l)}">
+        <div class="lrow-name"><span class="ldot"></span><input type="text" data-lrename="${l.id}" value="${esc(l.label)}" aria-label="Name der Liste" maxlength="40"><input type="text" class="lshort" data-lshort="${l.id}" value="${esc(l.short)}" aria-label="Kürzel" title="Kürzel in der Tabelle" maxlength="3"></div>
+        <button class="btn danger" type="button" data-ldel="${l.id}">Löschen</button>
+        <div class="scopes">${swatches("lc-" + l.id, l.color, `data-lcolor="${l.id}"`)}<span class="type">${n} ${n === 1 ? "Kontakt" : "Kontakte"}</span></div></div>`;
+    }).join("");
+    return `<div class="drawer-head"><h2>Listen verwalten</h2><button class="btn ghost" type="button" data-act="close">Schließen</button></div>
+      <div class="drawer-body">
+        <p class="hint">Hauptliste, PP-Liste, 30er Liste und Kundenliste sind fest dabei. Zusätzlich legst du hier eigene Listen an, zum Beispiel „Empfehlungen“ oder „Recruiting“. Sie erscheinen in der Navigation und als Knopf in jeder Zeile, genau wie die festen Listen.</p>
+        <h3 class="section-title">Neue Liste</h3>
+        <form id="lAdd" class="field" style="gap:10px">
+          <div class="grid2">
+            <label class="field"><span>Name</span><input id="lLabel" type="text" required maxlength="40" placeholder="z. B. Empfehlungen" data-autofocus></label>
+            <label class="field"><span>Kürzel (bis 3 Zeichen)</span><input id="lShort" type="text" maxlength="3" placeholder="automatisch"></label>
+          </div>
+          <div class="field"><span class="hint">Farbe</span>${swatches("lColor", nextColor, "")}</div>
+          <div><button class="btn primary" type="submit">Liste anlegen</button></div>
+        </form>
+        <h3 class="section-title">Feste Listen</h3>
+        <div class="share-row">${BASE_LISTS.map((l) => `<span class="lchip wide" style="--c: ${lc(l)}" aria-pressed="true">${esc(l.label)}</span>`).join("")}</div>
+        <h3 class="section-title">Eigene Listen (${S.customLists.length})</h3>
+        ${rows || `<p class="hint">Noch keine eigenen Listen.</p>`}
+      </div>`;
+  }
+  function autoShort(label) {
+    const w = label.trim().split(/\s+/).filter(Boolean);
+    const s = w.length > 1 ? w.slice(0, 2).map((x) => x[0]).join("") : (w[0] || "?").slice(0, 2);
+    return s.toUpperCase();
   }
   let importText = "";
   function importPreview(p) {
@@ -1819,7 +1962,7 @@ window.KONTAKT_CONFIG = {
 
   function caldavCard() {
     const x = C.caldav;
-    const head = `<section class="set-card"><h3 class="section-title">Termine direkt in iCloud eintragen</h3>`;
+    const head = `<section class="set-card" id="setCaldav"><h3 class="section-title">Termine direkt in iCloud eintragen</h3>`;
     if (x === null || x === undefined) return head + `<p class="hint">Dafür muss einmal <strong>icloud-eintragen.sql</strong> in Supabase ausgeführt und die Funktion <strong>icloud-kalender</strong> angelegt werden.</p></section>`;
     if (!x) return head + `<p class="hint">Dann tragen „+ Termin“ und alle Kalender-Knöpfe Termine ohne Nachfrage in einen Kalender deiner Wahl ein, zum Beispiel „tecis“. Dafür brauchst du ein app-spezifisches Passwort von Apple. Dein normales Apple-Passwort gibst du hier nie ein.</p>
       <ol class="ext-steps"><li>Öffne <strong>account.apple.com</strong> und melde dich an.</li><li>Tippe auf <strong>Anmelden und Sicherheit → App-spezifische Passwörter</strong>.</li><li>Erstelle ein neues Passwort mit dem Namen „Vertriebs-Cockpit“ und kopiere es.</li><li>Gib unten deine Apple-ID und dieses Passwort ein.</li></ol>
@@ -1833,7 +1976,7 @@ window.KONTAKT_CONFIG = {
   }
   function extCard() {
     const list = C.exts;
-    const head = `<section class="set-card"><h3 class="section-title">iPhone-Kalender verbinden</h3>`;
+    const head = `<section class="set-card" id="setExt"><h3 class="section-title">iPhone-Kalender verbinden</h3>`;
     if (!list) return head + `<p class="hint">Damit private Termine aus deinem iPhone-Kalender deine buchbaren Zeiten automatisch blockieren, muss einmal <strong>iphone-kalender.sql</strong> in Supabase ausgeführt werden.</p></section>`;
     const when = (t) => new Date(t).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
     const status = (x) => C.extSyncing ? `<p class="ext-status">Wird abgeglichen …</p>`
@@ -1867,6 +2010,191 @@ window.KONTAKT_CONFIG = {
     await loadCal(); renderAll();
     if (!quiet && !r.error && C.exts && C.exts.length && C.exts.every((x) => x.last_status === "ok")) toast(C.exts.length === 1 ? "iPhone-Kalender abgeglichen." : `${C.exts.length} Kalender abgeglichen.`);
   }
+
+  // ---------- Einstellungen: Anleitung Kalender verbinden ----------
+  // Bilder als gezeichnete iPhone-Bildschirme (SVG), damit sie im hellen und dunklen Modus passen und nichts nachgeladen wird.
+  const IL = {
+    t: (x, y, t, cls = "", size = 9, anchor = "start") => `<text x="${x}" y="${y}" font-size="${size}" class="${cls}" text-anchor="${anchor}">${t}</text>`,
+    r: (x, y, w, h, cls, rx = 4) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" class="${cls}"/>`,
+    hl: (x, y, w, h) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7" class="il-hl"/><circle cx="${x + w - 6}" cy="${y + h - 2}" r="7" class="il-tap"/>`,
+    phone: (body, bar = "") => `<svg viewBox="0 0 160 280" class="il" aria-hidden="true">
+      <rect x="3" y="3" width="154" height="274" rx="24" class="il-frame"/>
+      <rect x="10" y="10" width="140" height="260" rx="18" class="il-screen"/>
+      ${bar}
+      <text x="24" y="27" font-size="8" class="il-t" font-weight="600">9:41</text><rect x="62" y="16" width="36" height="10" rx="5" class="il-frame"/>
+      <rect x="124" y="20" width="14" height="6" rx="2" class="il-t-fill"/>
+      ${body}
+      <rect x="58" y="262" width="44" height="3" rx="1.5" class="il-t-fill"/></svg>`,
+    line: (x, y, w) => `<rect x="${x}" y="${y}" width="${w}" height="5" rx="2.5" class="il-line"/>`,
+  };
+  function settingsSteps() {
+    const { t, r, hl, phone, line } = IL;
+    const navBar = `<path d="M10 30 Q10 10 28 10 H132 Q150 10 150 28 V48 H10 Z" class="il-nav"/>`;
+    const cockpitHead = (title) => `${t(22, 42, "Vertriebs-Cockpit", "il-nav-t", 9.5)}${t(22, 66, title, "il-t", 11)}`;
+    const iphone = [
+      {
+        title: "Kalender-App öffnen",
+        text: "Öffne auf dem iPhone die App <strong>Kalender</strong> und tippe unten in der Mitte auf <strong>Kalender</strong>.",
+        svg: phone(`${t(22, 52, "Oktober", "il-red", 15)}
+          ${["M", "D", "M", "D", "F", "S", "S"].map((d, i) => t(26 + i * 18, 72, d, "il-m", 7, "middle")).join("")}
+          ${[0, 1, 2, 3].map((w) => [0, 1, 2, 3, 4, 5, 6].map((d) => t(26 + d * 18, 90 + w * 22, String(((w * 7 + d + 5) % 31) + 1), w === 3 && d === 0 ? "il-today" : "il-t", 8, "middle")).join("")).join("")}
+          <circle cx="26" cy="154" r="8" class="il-red-fill"/>${t(26, 157, "27", "il-white", 8, "middle")}
+          ${r(18, 178, 124, 18, "il-ev", 4)}${t(24, 190, "10:00  Termin tecis", "il-t", 7.5)}
+          ${r(18, 200, 124, 18, "il-ev2", 4)}${t(24, 212, "14:00  Privat", "il-t", 7.5)}
+          <line x1="10" y1="236" x2="150" y2="236" class="il-sep"/>
+          ${t(30, 252, "Heute", "il-red", 8, "middle")}${t(80, 252, "Kalender", "il-red", 8, "middle")}${t(128, 252, "Eingang", "il-red", 8, "middle")}
+          ${hl(56, 240, 48, 18)}`),
+      },
+      {
+        title: "Kalender auswählen",
+        text: "Tippe beim Kalender, den das Cockpit sehen soll, rechts auf das <strong>ⓘ</strong>, zum Beispiel bei „tecis“ oder „Privat“.",
+        svg: phone(`${t(80, 46, "Kalender", "il-t", 10, "middle")}${t(136, 46, "Fertig", "il-blue", 8, "end")}
+          ${t(20, 70, "ICLOUD", "il-m", 7)}
+          ${[["Privat", "il-c1"], ["tecis", "il-c2"], ["Familie", "il-c3"], ["Geburtstage", "il-c4"]].map(([n, c], i) => `
+            ${r(16, 76 + i * 26, 128, 24, "il-row", i === 0 ? 6 : 0)}<circle cx="28" cy="${88 + i * 26}" r="5" class="${c}"/>${t(40, 91 + i * 26, n, "il-t", 8.5)}
+            <circle cx="132" cy="${88 + i * 26}" r="6" class="il-info"/>${t(132, 91 + i * 26, "i", "il-blue", 8, "middle")}`).join("")}
+          ${hl(122, 104, 20, 20)}
+          ${t(20, 200, "ANDERE", "il-m", 7)}${r(16, 206, 128, 24, "il-row", 6)}${t(28, 221, "Feiertage", "il-t", 8.5)}`),
+      },
+      {
+        title: "Öffentlich machen und Link kopieren",
+        text: "Schalte ganz unten <strong>Öffentlicher Kalender</strong> ein. Tippe dann auf <strong>Link teilen …</strong> und auf <strong>Kopieren</strong>.",
+        svg: phone(`${t(80, 46, "Kalender bearbeiten", "il-t", 9, "middle")}
+          ${r(16, 58, 128, 22, "il-row", 6)}${t(26, 72, "tecis", "il-t", 8.5)}
+          ${t(20, 96, "FARBE", "il-m", 7)}${r(16, 100, 128, 22, "il-row", 6)}<circle cx="28" cy="111" r="5" class="il-c2"/>${t(38, 114, "Blau", "il-t", 8.5)}
+          ${t(20, 138, "TEILEN", "il-m", 7)}${r(16, 142, 128, 22, "il-row", 6)}${t(26, 156, "+ Person hinzufügen", "il-blue", 8)}
+          ${r(16, 172, 128, 46, "il-row", 6)}${t(26, 188, "Öffentlicher Kalender", "il-t", 8.5)}
+          <rect x="112" y="179" width="24" height="14" rx="7" class="il-on"/><circle cx="129" cy="186" r="5.5" class="il-white-fill"/>
+          <line x1="26" y1="196" x2="144" y2="196" class="il-sep"/>${t(26, 210, "Link teilen …", "il-blue", 8.5)}
+          ${hl(108, 176, 32, 20)}${hl(20, 199, 66, 16)}
+          ${r(30, 228, 100, 22, "il-pop", 8)}${t(80, 242, "Kopieren", "il-t", 8.5, "middle")}`),
+      },
+      {
+        title: "Link im Cockpit einfügen",
+        text: "Öffne im Cockpit <strong>Kalender → Einstellungen</strong>, füge den Link bei <strong>iPhone-Kalender verbinden</strong> ein, gib ihm einen Namen und tippe auf <strong>Hinzufügen</strong>.",
+        svg: phone(`${cockpitHead("Kalender-Einstellungen")}
+          ${r(16, 76, 128, 150, "il-card", 8)}${t(24, 92, "iPhone-Kalender verbinden", "il-t", 8, "start")}
+          ${line(24, 100, 104)}${line(24, 109, 80)}
+          ${r(24, 122, 112, 20, "il-input", 5)}${t(30, 135, "tecis", "il-t", 8)}
+          ${r(24, 148, 112, 20, "il-input", 5)}${t(30, 161, "webcal://p…icloud.com/…", "il-m", 7.5)}
+          <rect x="24" y="175" width="9" height="9" rx="2" class="il-check"/>${t(38, 183, "Termine mit Titel anzeigen", "il-t", 7)}
+          ${r(24, 194, 70, 22, "il-btn", 6)}${t(59, 208, "Hinzufügen", "il-white", 8, "middle")}
+          ${hl(22, 192, 74, 26)}
+          ${t(80, 246, "Abgleich alle 10 Minuten", "il-m", 7.5, "middle")}`, navBar),
+      },
+    ];
+    const icloud = [
+      {
+        title: "Apple-Account öffnen",
+        text: "Öffne in Safari <strong>account.apple.com</strong> und melde dich mit deiner Apple-ID an.",
+        svg: phone(`${r(16, 36, 128, 18, "il-input", 9)}${t(80, 48, "account.apple.com", "il-t", 8, "middle")}
+          <circle cx="80" cy="92" r="16" class="il-apple"/><circle cx="80" cy="87" r="5" class="il-white-fill"/><path d="M71 101 Q80 92 89 101" class="il-white-stroke"/>
+          ${t(80, 130, "Apple Account", "il-t", 11, "middle")}
+          ${r(24, 146, 112, 22, "il-input", 6)}${t(32, 160, "E-Mail oder Telefonnummer", "il-m", 7.5)}
+          ${r(24, 174, 112, 22, "il-input", 6)}${t(32, 188, "Passwort", "il-m", 7.5)}
+          ${r(40, 206, 80, 22, "il-btn-blue", 11)}${t(80, 220, "Anmelden", "il-white", 8.5, "middle")}
+          ${hl(38, 204, 84, 26)}`),
+      },
+      {
+        title: "App-spezifische Passwörter",
+        text: "Tippe auf <strong>Anmelden und Sicherheit</strong> und dann auf <strong>App-spezifische Passwörter</strong>.",
+        svg: phone(`${t(22, 52, "Anmelden und Sicherheit", "il-t", 10.5)}
+          ${[["E-Mail und Telefon", ""], ["Passwort", ""], ["Accountsicherheit", ""], ["Mit Apple anmelden", ""], ["App-spezifische Passwörter", "on"]].map(([n], i) => `
+            ${r(16, 66 + i * 30, 128, 26, "il-row", 6)}${t(26, 82 + i * 30, n, "il-t", 8)}${t(136, 82 + i * 30, "›", "il-m", 11, "end")}`).join("")}
+          ${hl(14, 184, 132, 30)}
+          ${line(22, 232, 110)}${line(22, 242, 84)}`),
+      },
+      {
+        title: "Passwort erstellen und kopieren",
+        text: "Tippe auf <strong>+</strong>, nenne das Passwort „Vertriebs-Cockpit“ und tippe auf <strong>Erstellen</strong>. Kopiere das angezeigte Passwort (xxxx-xxxx-xxxx-xxxx).",
+        svg: phone(`${t(80, 50, "App-spezifische Passwörter", "il-t", 8.5, "middle")}
+          ${r(20, 64, 120, 84, "il-pop", 10)}${t(80, 82, "Passwort erstellen", "il-t", 8.5, "middle")}
+          ${r(30, 92, 100, 20, "il-input", 5)}${t(36, 105, "Vertriebs-Cockpit", "il-t", 8)}
+          ${r(50, 120, 60, 20, "il-btn-blue", 10)}${t(80, 133, "Erstellen", "il-white", 8, "middle")}
+          ${hl(48, 118, 64, 24)}
+          ${r(20, 164, 120, 70, "il-pop", 10)}${t(80, 182, "Dein Passwort", "il-m", 7.5, "middle")}
+          ${t(80, 202, "abcd-efgh-ijkl-mnop", "il-mono", 9, "middle")}
+          ${t(80, 224, "Kopieren", "il-blue", 8.5, "middle")}${hl(56, 212, 48, 18)}`),
+      },
+      {
+        title: "Im Cockpit verbinden",
+        text: "Öffne im Cockpit <strong>Kalender → Einstellungen</strong>, gib bei <strong>Termine direkt in iCloud eintragen</strong> deine Apple-ID und dieses Passwort ein und tippe auf <strong>Verbinden</strong>. Wähle danach den Standard-Kalender, zum Beispiel „tecis“.",
+        svg: phone(`${cockpitHead("Kalender-Einstellungen")}
+          ${r(16, 76, 128, 168, "il-card", 8)}${t(24, 92, "Direkt in iCloud eintragen", "il-t", 8)}
+          ${line(24, 100, 104)}
+          ${r(24, 112, 112, 20, "il-input", 5)}${t(30, 125, "name@icloud.com", "il-t", 7.5)}
+          ${r(24, 138, 112, 20, "il-input", 5)}${t(30, 151, "•••• •••• •••• ••••", "il-m", 8)}
+          ${r(24, 164, 64, 22, "il-btn", 6)}${t(56, 178, "Verbinden", "il-white", 8, "middle")}
+          ${hl(22, 162, 68, 26)}
+          ${t(24, 206, "Standard-Kalender", "il-m", 7)}${r(24, 212, 112, 20, "il-input", 5)}${t(30, 225, "tecis", "il-t", 8)}${t(130, 225, "⌄", "il-m", 9, "end")}`, navBar),
+      },
+    ];
+    return { iphone, icloud };
+  }
+  function renderSettings() {
+    const v = $("settingsView");
+    const { iphone, icloud } = settingsSteps();
+    const steps = (arr) => `<ol class="guide">${arr.map((s, i) => `<li class="guide-step"><figure>${s.svg}</figure><div class="guide-text"><span class="guide-n">${i + 1}</span><h4>${esc(s.title)}</h4><p>${s.text}</p></div></li>`).join("")}</ol>`;
+    const exts = C.exts, cd = C.caldav;
+    const extState = exts === undefined ? "Wird geprüft …" : exts === null ? "Noch nicht eingerichtet (SQL fehlt in Supabase)"
+      : exts.length ? `${exts.length} ${exts.length === 1 ? "Kalender" : "Kalender"} verbunden: ${exts.map((x) => esc(x.name || "Kalender")).join(", ")}` : "Noch kein Kalender verbunden";
+    const cdState = cd === undefined && !C.loaded ? "Wird geprüft …" : cd === null || cd === undefined ? "Noch nicht eingerichtet (Funktion fehlt in Supabase)"
+      : cd ? `Verbunden mit ${esc(cd.apple_id)}${cd.default_url ? ` · Standard: ${esc(caldavName(cd.default_url))}` : ""}` : "Nicht verbunden";
+    const ok = (b) => `<span class="pill ${b ? "edit" : ""}">${b ? "Aktiv" : "Offen"}</span>`;
+    v.innerHTML = `<h2 class="page-title">Einstellungen</h2>
+      <section class="set-card">
+        <h3 class="section-title">Kalender verbinden</h3>
+        <p class="hint">Es gibt zwei Verbindungen. Beide sind freiwillig und funktionieren unabhängig voneinander. Am besten richtest du beide ein: dann sieht das Cockpit deine Termine, und neue Termine aus dem Cockpit landen ohne Umweg in deinem iPhone-Kalender.</p>
+        <div class="conn-grid">
+          <a class="conn-card" href="#anl-iphone"><span class="conn-ic" aria-hidden="true">↓</span><div><strong>iPhone-Kalender ins Cockpit holen</strong><span>Deine Termine blockieren automatisch deine buchbaren Zeiten und erscheinen in Woche und Startseite.</span><em>${extState}</em></div>${ok(exts && exts.length)}</a>
+          <a class="conn-card" href="#anl-icloud"><span class="conn-ic" aria-hidden="true">↑</span><div><strong>Termine direkt in iCloud eintragen</strong><span>„+ Termin“ und alle Kalender-Knöpfe tragen ohne Nachfrage in deinen Kalender ein, zum Beispiel „tecis“.</span><em>${cdState}</em></div>${ok(cd && cd.default_url)}</a>
+        </div>
+      </section>
+      <section class="set-card" id="anl-iphone">
+        <h3 class="section-title">Anleitung 1: iPhone-Kalender ins Cockpit holen</h3>
+        <p class="hint">Dauert etwa zwei Minuten pro Kalender. Wiederhole die Schritte für jeden Kalender, den das Cockpit kennen soll (bis zu 10).</p>
+        ${steps(iphone)}
+        <div class="share-row"><button type="button" class="btn primary" data-setgo="setExt">Jetzt im Cockpit einfügen</button></div>
+      </section>
+      <section class="set-card" id="anl-icloud">
+        <h3 class="section-title">Anleitung 2: Termine direkt in iCloud eintragen</h3>
+        <p class="hint">Dafür brauchst du ein <strong>app-spezifisches Passwort</strong> von Apple. Dein normales Apple-Passwort gibst du im Cockpit nie ein. Das geht am einfachsten am MacBook oder iPad im Browser.</p>
+        ${steps(icloud)}
+        <div class="share-row"><button type="button" class="btn primary" data-setgo="setCaldav">Jetzt im Cockpit verbinden</button></div>
+      </section>
+      <section class="set-card">
+        <h3 class="section-title">Gut zu wissen</h3>
+        <ul class="ext-steps">
+          <li>Der Abgleich mit deinen iPhone-Kalendern läuft alle 10 Minuten. Unter Kalender → Einstellungen kannst du ihn mit „Alle jetzt abgleichen“ sofort starten.</li>
+          <li>Andere im Team sehen nie, was du vorhast, nur dass du belegt bist.</li>
+          <li>Funktioniert ein Link nicht mehr, entferne den Kalender im Cockpit und füge den Link neu ein. Schaltest du „Öffentlicher Kalender“ im iPhone aus, ist der Link ungültig.</li>
+          <li>Das app-spezifische Passwort kannst du bei Apple jederzeit widerrufen. Danach im Cockpit auf „Trennen“ tippen und neu verbinden.</li>
+        </ul>
+      </section>
+      <section class="set-card">
+        <h3 class="section-title">Listen</h3>
+        <p class="hint">Neben Hauptliste, PP-Liste, 30er Liste und Kundenliste kannst du eigene Listen anlegen, umbenennen, einfärben und wieder löschen.</p>
+        <div class="share-row"><button type="button" class="btn" data-setlists="1">Listen verwalten</button><span class="hint">${S.customLists.length ? `Eigene Listen: ${S.customLists.map((l) => esc(l.label)).join(", ")}` : "Noch keine eigenen Listen."}</span></div>
+      </section>`;
+  }
+  async function openSettings() {
+    if (S.owner !== S.me.id) await openOwner(S.me.id, displayName(S.me), true);
+    S.view = "settings"; renderAll();
+    await loadCal(); C.loaded = true;
+    if (S.view === "settings") renderAll();
+  }
+  $("settingsView").addEventListener("click", async (e) => {
+    const a = e.target.closest('a[href^="#anl-"]');
+    if (a) { e.preventDefault(); document.getElementById(a.getAttribute("href").slice(1))?.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+    const t = e.target.closest("button"); if (!t) return;
+    if (t.dataset.setlists) { openPanel("lists"); return; }
+    if (t.dataset.setgo) {
+      try { history.replaceState(null, "", "#kalender"); } catch (err) {}
+      await openCal("einstellungen");
+      const el = document.getElementById(t.dataset.setgo);
+      if (el) { el.scrollIntoView({ behavior: "smooth", block: "start" }); el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 1600); }
+    }
+  });
 
   // ---------- Kalender: Ereignisse ----------
   const calV = $("calView");
@@ -2293,18 +2621,20 @@ window.KONTAKT_CONFIG = {
     const v = e.target.closest("[data-view]");
     if (v) {
       const to = v.dataset.view;
-      try { history.replaceState(null, "", to === "home" ? "#" : to === "list" ? "#liste" : to === "admin" ? "#verwaltung" : to === "cal" ? "#kalender" : "#team"); } catch (err) {}
+      try { history.replaceState(null, "", to === "home" ? "#" : to === "list" ? "#liste" : to === "admin" ? "#verwaltung" : to === "cal" ? "#kalender" : to === "settings" ? "#einstellungen" : "#team"); } catch (err) {}
       if (to === "list") { if (S.owner !== S.me.id) await openOwner(S.me.id, displayName(S.me), true); else { S.view = "list"; renderAll(); } }
       else if (to === "team") { S.view = "team"; renderAll(); await loadTeam(); renderAll(); }
       else if (to === "admin") await showAdmin();
       else if (to === "cal") await openCal();
       else if (to === "home") await openHome();
+      else if (to === "settings") await openSettings();
       return;
     }
     const o = e.target.closest("[data-owner]");
     if (o) { const t = S.team.find((x) => x.id === o.dataset.owner); if (t) await openOwner(t.id, t.name, t.canEdit); }
   });
   $("tabs").addEventListener("click", (e) => {
+    if (e.target.closest("[data-addlist]")) { openPanel("lists"); return; }
     const t = e.target.closest("[data-list]"); if (!t) return;
     S.list = t.dataset.list; S.selected.clear(); S.dueOnly = false;
     renderAll();
@@ -2438,8 +2768,19 @@ window.KONTAKT_CONFIG = {
       const f = S.fields.find((x) => x.id === e.target.dataset.frename);
       if (f) { f.label = e.target.value; clearTimeout(f._t); f._t = setTimeout(() => { delete f._t; saveSettings(); renderAll(); }, 700); }
     }
+    const lid = e.target.dataset.lrename || e.target.dataset.lshort;
+    if (lid) {
+      const l = S.customLists.find((x) => x.id === lid); if (!l) return;
+      const v = e.target.value.trim();
+      if (e.target.dataset.lrename) { if (!v) return; l.label = v; } else l.short = v || autoShort(l.label);
+      clearTimeout(l._t); l._t = setTimeout(() => { delete l._t; saveSettings(); renderAll(); }, 700);
+    }
   });
   ov.addEventListener("change", async (e) => {
+    if (e.target.dataset.lcolor) {
+      const l = S.customLists.find((x) => x.id === e.target.dataset.lcolor); if (!l) return;
+      l.color = e.target.value; saveSettings(); renderAll(); return;
+    }
     if (e.target.id === "fType") $("fOptWrap").hidden = e.target.value !== "auswahl";
     if (e.target.id === "impFile" && e.target.files[0]) {
       importText = await e.target.files[0].text();
@@ -2458,6 +2799,18 @@ window.KONTAKT_CONFIG = {
     if (e.target.dataset.did && (e.target.dataset.f === "soziotop" || e.target.dataset.f === "beruf")) renderToolbar();
   });
   ov.addEventListener("submit", (e) => {
+    if (e.target.id === "lAdd") {
+      e.preventDefault();
+      const label = $("lLabel").value.trim(); if (!label) return;
+      if (LISTS.some((l) => l.label.toLowerCase() === label.toLowerCase())) { toast(`Eine Liste „${label}“ gibt es schon.`); return; }
+      const color = (ov.querySelector('input[name="lColor"]:checked') || {}).value || "teal";
+      const l = { id: "x" + uid8(), kind: "liste", label, short: $("lShort").value.trim() || autoShort(label), color };
+      setCustomLists([...S.customLists, l]);
+      saveSettings();
+      renderPanel(true); renderAll();
+      toast(`Liste „${label}“ angelegt. Du findest sie in der Navigation.`);
+      return;
+    }
     if (e.target.id !== "fAdd") return;
     e.preventDefault();
     const label = $("fLabel").value.trim(); if (!label) return;
@@ -2473,8 +2826,25 @@ window.KONTAKT_CONFIG = {
   });
   let armed = null;
   ov.addEventListener("click", (e) => {
-    const t = e.target.closest("[data-act], [data-toggle], [data-del], [data-fdel], [data-cal], [data-svcal], #impGo");
+    const t = e.target.closest("[data-act], [data-toggle], [data-del], [data-fdel], [data-ldel], [data-cal], [data-svcal], #impGo");
     if (!t) return;
+    if (t.dataset.ldel) {
+      const key = "l:" + t.dataset.ldel, l = S.customLists.find((x) => x.id === t.dataset.ldel); if (!l) return;
+      const members = inList(l.id), only = members.filter((c) => c.lists.length === 1).length;
+      if (armed !== key) {
+        armed = key; t.classList.add("armed"); t.textContent = "Wirklich löschen?";
+        if (only) toast(`${only} ${only === 1 ? "Kontakt steht" : "Kontakte stehen"} nur in „${l.label}“ und ${only === 1 ? "kommt" : "kommen"} beim Löschen in die Hauptliste.`);
+        setTimeout(() => { if (armed === key) { armed = null; if (t.isConnected) { t.classList.remove("armed"); t.textContent = "Löschen"; } } }, 4000);
+        return;
+      }
+      armed = null;
+      for (const c of members) { c.lists = c.lists.filter((x) => x !== l.id); if (!c.lists.length) c.lists = ["haupt"]; saveContact(c._id, 0); }
+      setCustomLists(S.customLists.filter((x) => x.id !== l.id));
+      S.fields.forEach((f) => { if (f.lists) { f.lists = f.lists.filter((x) => x !== l.id); if (!f.lists.length) f.lists = ["haupt"]; } });
+      saveSettings(); renderPanel(true); renderAll();
+      toast(`Liste „${l.label}“ gelöscht.`);
+      return;
+    }
     if (t.dataset.cal) return addToCalendar(t.dataset.cal);
     if (t.dataset.svcal) return serviceToCalendar(t.dataset.svcal);
     if (t.dataset.act === "close") return closePanel();
